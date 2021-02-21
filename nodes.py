@@ -7,14 +7,16 @@ import rsa
 import shamir_mnemonic as shamir
 import uuid
 import random
+from SSSA import sssa
 
 discovery_nodes = list()
 threshold = 3
+sss = sssa()
 
 
 class Node:
     def __init__(self):
-        (pubkey, privkey) = rsa.newkeys(512)
+        (pubkey, privkey) = rsa.newkeys(256)
         self.pubkey = pubkey
         self.privkey = privkey
         self.id = str(uuid.uuid4())
@@ -22,6 +24,8 @@ class Node:
 
 
 class User(Node):
+    #print(sss.combine([secrets[0], secrets[1], secrets[3]]))
+    global sss
     global discovery_nodes
 
     def __init__(self, *args):
@@ -49,16 +53,23 @@ class User(Node):
     def register(self):
         # Split the secret (user ID and network location) into n pieces
         n = len(discovery_nodes)
-        print(self.secret)
-        secret_pieces = shamir.generate_mnemonics(
-            1, [(threshold, n)], self.secret)[0]
+        #secret_pieces = self._divide_secret(self.secret, threshold, n)
+        #secret_pieces = shamir.generate_mnemonics(1, [(threshold, n)], self.secret)[0]
+        secret_pieces = sss.create(threshold, n, self.secret)
+        print(secret_pieces)
         if self.request_registration():
             for i in range(n):
                 d_pubkey = discovery_nodes[i].pubkey
                 encrypted_registration_message = rsa.encrypt(
-                    bytes(self.id + ',' + secret_pieces[i], encoding='utf-8'), d_pubkey)
+                    bytes(secret_pieces[i], encoding='utf-8'), d_pubkey)
                 discovery_nodes[i].register(encrypted_registration_message)
-        print(secret_pieces)
+
+    def _divide_secret(self, secret, k, n):
+        # TODO: Shamir's secret sharing
+
+        #secret_pieces = sss.create(k, n, self.secret)
+        # print(secret_pieces)
+        return list(map(str, random.sample(range(0, 100), n)))
 
 
 class DiscoveryNode(Node):

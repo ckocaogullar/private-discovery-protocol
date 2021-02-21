@@ -1,6 +1,7 @@
 import rsa
 import shamir_mnemonic as shamir
 import nodes
+from SSSA import sssa
 
 
 def main():
