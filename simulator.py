@@ -9,16 +9,16 @@ def main():
         nodes.DiscoveryNode()
 
     discovery_nodes = nodes.get_discovery_nodes()
-    user1 = nodes.User()
+    user1 = nodes.User("ceren")
     user2 = nodes.User("ck596")
 
    # print(user1.id, ' ', user1.pubkey)
    # print(user2.id, ' ', user1.pubkey)
 
     user1.register()
-    user2.register()
+    # user2.register()
     for i in range(len(discovery_nodes)):
-        print(discovery_nodes[i].get_user_registry())
+        print(discovery_nodes[i].user_registry)
 
 
 if __name__ == "__main__":
