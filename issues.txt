@@ -1,1 +1,3 @@
-# Secret is too long - cannot be encrypted using RSA
+# Secret is too long - cannot be encrypted using RSA. Combining AES session key with RSA
+# In the discovery stage, the message that Alice sends to discovery servers is not structured like it is written in the document.
+#### Instead, it is ({ID_B}_sym, {sym}_pk)

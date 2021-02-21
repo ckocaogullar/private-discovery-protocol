@@ -13,8 +13,11 @@ from Crypto.Random import get_random_bytes
 from Crypto.Cipher import AES, PKCS1_OAEP
 
 discovery_nodes = list()
+relay_nodes = list()
 threshold = 3
+path_length = 3
 sss = sssa()
+public_address_book = dict()
 
 
 class Node:
@@ -25,6 +28,7 @@ class Node:
         self.privkey = key.export_key()
         self.id = str(uuid.uuid4())
         self.loc = str(uuid.uuid4())
+        self.address_book = public_address_book
 
     def encrypt(self, data, recipient_key):
         # Since we want to be able to encrypt an arbitrary amount of data,
@@ -56,9 +60,43 @@ class Node:
         data = cipher_aes.decrypt_and_verify(ciphertext, tag)
         return data.decode("utf-8")
 
+    def pass_message(self, message):
+        if message.header[0] == '':
+            print(f"I have received the message. My id is {self.id}")
+            self.process_message(message)
+        else:
+            if isinstance(message.header, tuple):
+                peeled_header = self.decrypt(message.header)
+                print(f'peeled header is')
+            next_hop = peeled_header.split('+')[0]
+            next_header = self._str_to_tuple(peeled_header.split('+')[1])
+            message.header = next_header
+            return self.address_book[next_hop].process_message(message)
+
+    def process_message(self, message):
+        self.decrypt(message.payload)
+
+    def build_header(self, path):
+        header = ""
+        for i in range(len(path)):
+            header = self.encrypt(
+                self._tuple_to_str(header) + '+' + path[len(path)-2-i].id, path[len(path)-1-i].pubkey)
+        return header
+
+    def _tuple_to_str(self, tup):
+        string = ''
+        for i in range(len(tup)):
+            string += str(tup[i])
+            if i != 0 and i != len(tup) - 1:
+                string += ''
+        return string
+
+    def _str_to_tuple(self, string):
+        lst = string.split(',')
+        return tuple(lst)
+
 
 class User(Node):
-    #print(sss.combine([secrets[0], secrets[1], secrets[3]]))
     global sss
     global discovery_nodes
 
@@ -86,11 +124,10 @@ class User(Node):
     def register(self):
         # Split the secret (user ID and network location) into n pieces
         n = len(discovery_nodes)
-        #secret_pieces = self._divide_secret(self.secret, threshold, n)
-        #secret_pieces = shamir.generate_mnemonics(1, [(threshold, n)], self.secret)[0]
+
         secret_pieces = self._divide_secret(self.secret, threshold, n)
-        
-        print(secret_pieces)
+
+        # print(secret_pieces)
         if self.request_registration():
             for i in range(n):
                 registration_message = self.id + ', ' + secret_pieces[i]
@@ -98,6 +135,19 @@ class User(Node):
                 encrypted_registration_message = self.encrypt(
                     registration_message, d_pubkey)
                 discovery_nodes[i].register(encrypted_registration_message)
+
+    def lookup_user(self, user_id):
+        selected_discovery_nodes = random.sample(discovery_nodes, k=threshold)
+
+        # Picking path_length * 2 relay nodes for the way to and from discovery nodes.
+        selected_relay_nodes = random.sample(relay_nodes, k=path_length * 2)
+        header = self.build_header(
+            [self] + selected_relay_nodes[:path_length] + selected_discovery_nodes + selected_relay_nodes[path_length:] + [self])
+        payload = list()
+        for node in selected_discovery_nodes:
+            payload.append(self.encrypt(self.id, node.pubkey))
+
+        self.pass_message(Message(header, payload))
 
     def _divide_secret(self, secret, k, n):
         return sss.create(k, n, self.secret)
@@ -120,12 +170,48 @@ class DiscoveryNode(Node):
 
     def register(self, encrypted_message):
         message = self.decrypt(encrypted_message)
-        print(message)
+        # print(message)
         user_id = str(message).split(',')[0].strip()
         secret_piece = str(message).split(',')[1].strip()
         self.user_registry[user_id] = secret_piece
+
+    def process_message(self, message):
+        # Process discovery message. Payload consists of a list of data tuples.
+        # Each of the data tuples is encrypted with one discovery server's pubkey.
+        for payload in message.payload:
+            print(
+                f'I am discovery node {self.id}, decrypting {self.decrypt(payload)}')
+            print(self.decrypt(payload))
+        self.pass_message(message)
+
+
+class Message:
+    def __init__(self, header, payload):
+        self.header = header
+        self.payload = payload
 
 
 def get_discovery_nodes():
     global discovery_nodes
     return discovery_nodes
+
+
+def initiate_network(num_discovery_nodes, num_relay_nodes, num_users):
+    global discovery_nodes
+    global relay_nodes
+    global public_address_book
+
+    for i in range(num_discovery_nodes):
+        discovery_nodes.append(DiscoveryNode())
+
+    for i in range(num_relay_nodes):
+        relay_nodes.append(Node())
+
+    for i in range(num_users):
+        User()
+
+    for node in discovery_nodes:
+        public_address_book[node.id] = node
+
+    for node in relay_nodes:
+        public_address_book[node.id] = node
