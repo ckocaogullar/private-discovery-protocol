@@ -44,35 +44,27 @@ class Node:
         enc_session_key = cipher_rsa.encrypt(session_key)
 
         # Encrypt the data with the AES session key
-        cipher_aes = AES.new(session_key, AES.MODE_EAX)
-        ciphertext, tag = cipher_aes.encrypt_and_digest(
-            bytes(data, encoding='utf-8'))
-
-        return (enc_session_key, cipher_aes.nonce, tag, ciphertext), session_key
+        (ciphertext, tag), nonce = self.aes_encrypt(data, session_key)
+        return (enc_session_key, nonce, tag, ciphertext), session_key
 
     def decrypt(self, data_tuple):
         enc_session_key, nonce, tag, ciphertext = [x for x in data_tuple]
+    
         # Decrypt the session key with the private RSA key
         cipher_rsa = PKCS1_OAEP.new(RSA.import_key(self.privkey))
         session_key = cipher_rsa.decrypt(enc_session_key)
 
         # Decrypt the data with the AES session key
-        cipher_aes = AES.new(session_key, AES.MODE_EAX, nonce)
-        data = cipher_aes.decrypt(ciphertext)
-        return data.decode("utf-8"), session_key
+        data = self.aes_decrypt(session_key, ciphertext, nonce)
+        return data, session_key
 
     def aes_encrypt(self, data, session_key):
         cipher = AES.new(session_key, AES.MODE_EAX)
-        print(
-            f"aes encrypt data is {bytes(data, encoding='utf-8')} and nonce is {cipher.nonce}")
         return cipher.encrypt_and_digest(bytes(data, encoding='utf-8')), cipher.nonce
 
     def aes_decrypt(self, key, ciphertext, nonce):
         cipher = AES.new(key, AES.MODE_EAX, nonce)
-        print(
-            f'aes data before decryption is {ciphertext}, key is {key}, nonce is {nonce}')
         data = cipher.decrypt(ciphertext)
-        print(f'aes decrypted data is {data}')
         return data.decode("utf-8")
 
     def pass_message(self, message):
@@ -122,7 +114,8 @@ class User(Node):
                 raise TypeError("Only strings are allowed as user IDs.")
         elif len(args) > 1:
             raise Exception(
-                "User constructor can only be called with one parameter (user ID) or none.")
+                "User constructor can only be called with one parameter (User ID) or none.")
+        print(f'User created with ID {self.id} and location {self.loc}')
 
     def request_registration(self):
         # Send registration request to a randomly selected discovery server
@@ -139,7 +132,6 @@ class User(Node):
                 d_pubkey = discovery_nodes[i].pubkey
                 encrypted_registration_message, session_key = self.encrypt(
                     registration_message, d_pubkey)
-                print(f'i is {i}')
                 discovery_nodes[i].register(encrypted_registration_message)
 
             for n in relay_nodes:
@@ -152,8 +144,6 @@ class User(Node):
         for node in selected_discovery_nodes:
             tup, session_key = self.encrypt(user_id, node.pubkey)
             enc_session_key, nonce, tag, ciphertext = [x for x in tup]
-            print(
-                f'selected discovery node is {node.id} with session key {session_key}')
             self.sym_keys.append((session_key, nonce))
             payload.append(tup)
         message = self.prepare_message(
@@ -169,7 +159,7 @@ class User(Node):
                 x.strip() for x in self.decrypt(message.payload)[0].split('separator')[1:]]
             if self._authenticate_user(sender):
                 print(
-                    f'Searcher with id {sender} authenticated by searchee {self.id}')
+                    f'Searcher with ID {sender} and location {sender_loc} authenticated by searchee {self.id}')
                 self.address_book[sender] = (sender_pubkey, sender_loc)
         else:
             print(
@@ -230,15 +220,12 @@ class DiscoveryNode(Node):
     def register(self, encrypted_message):
         message, session_key = self.decrypt(encrypted_message)
         user_id = str(message).split(',')[0].strip()
-        print(f'Discovery node {self.id} registering user {user_id}')
         secret_piece = str(message).split(',')[1].strip()
         self.user_registry[user_id] = secret_piece
 
     def process_message(self, message):
         # Process discovery message. Payload consists of a list of data tuples.
         # Each of the data tuples is encrypted with one discovery server's pubkey.
-        print(
-            f'Discovery node {self.id} processing message with payload {message.payload}')
         user_id, session_key = self.decrypt(message.payload.pop())
         ciphertext, nonce = self.aes_encrypt(
             user_id + ' ' + self.user_registry[user_id], session_key)
