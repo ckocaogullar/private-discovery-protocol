@@ -1,3 +1,12 @@
-# Secret is too long - cannot be encrypted using RSA. Combining AES session key with RSA
-# In the discovery stage, the message that Alice sends to discovery servers is not structured like it is written in the document.
-#### Instead, it is ({ID_B}_sym, {sym}_pk)
+## Secret is too long - cannot be encrypted using RSA. Combining AES session key with RSA
+
+## In the discovery stage, the message that Alice sends to discovery servers is not structured like it is written in 
+the document. Instead, it is ({ID_B}_sym, {sym}_pk)
+
+## Having trouble with decrypting secrets encrypted with the AES symmetric key
+
+## About DKIM: Is there any point in passing the registration email among servers
+
+## Should we pass the request between discovery servers or send them seperate emails
+
+## Responding in the absence of an answer
