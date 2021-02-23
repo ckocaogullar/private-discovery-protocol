@@ -6,8 +6,7 @@ from SSSA import sssa
 
 def main():
     nodes.initiate_network(5, 10, 0)
-
-    discovery_nodes = nodes.get_discovery_nodes()
+    
     user1 = nodes.User("ceren")
     user2 = nodes.User("furkan")
 
