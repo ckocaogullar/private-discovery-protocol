@@ -6,7 +6,7 @@ from SSSA import sssa
 
 def main():
     nodes.initiate_network(5, 10, 0)
-    
+
     user1 = nodes.User("ceren")
     user2 = nodes.User("furkan")
 
@@ -17,6 +17,7 @@ def main():
     user2.register()
 
     user1.lookup_user("furkan")
+    user1.lookup_user("yekta")
     # for i in range(len(discovery_nodes)):
     #    print(discovery_nodes[i].user_registry)
 
