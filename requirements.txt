@@ -4,5 +4,3 @@ colorama==0.4.4
 pyasn1==0.4.8
 pycryptodome==3.10.1
 pycryptodomex==3.10.1
-rsa==4.7.1
-shamir-mnemonic==0.2.1
