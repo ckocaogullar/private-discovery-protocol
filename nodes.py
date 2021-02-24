@@ -4,7 +4,6 @@
 # Simulation for A Private Node Discovery Protocol for Anonymous Networks
 
 import rsa
-import shamir_mnemonic as shamir
 import uuid
 import random
 from SSSA import sssa
