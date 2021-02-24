@@ -76,7 +76,7 @@ class Node:
                     f'{self.id} does not know node {next_hop}, dropping the message.')
 
     def process_message(self, message):
-        # Need this empty declaration for overloading
+        # Need this declaration for overloading
         pass
 
     def prepare_message(self, targets, payload, anonymous=False):
@@ -128,7 +128,8 @@ class User(Node):
     def request_registration(self):
         # Send registration request to a randomly selected discovery server
         selected_discovery_server = random.choice(discovery_nodes)
-        return selected_discovery_server.initiate_registration(self)
+        selected_discovery_servers = random.sample(discovery_nodes, threshold)
+        return selected_discovery_server.initiate_registration(self, selected_discovery_servers)
 
     def register(self, fake_id='', fake_secret=''):
         # Split the secret (user ID and network location) into n pieces
@@ -169,7 +170,7 @@ class User(Node):
         elif message_type == 'PING':
             sender, sender_pubkey, sender_loc = [
                 x.strip() for x in self.decrypt(message.payload)[0].split('separator')[1:]]
-            if self._authenticate_user(sender):
+            if self._authenticate_searcher(sender):
                 print(
                     f'Searcher with ID {sender} and location {sender_loc} authenticated by searchee {self.id}')
                 self.address_book[sender] = (sender_pubkey, sender_loc)
@@ -183,7 +184,7 @@ class User(Node):
         message = self.prepare_message([user_id], payload)
         self.pass_message(message)
 
-    def _authenticate_user(self, user_id):
+    def _authenticate_searcher(self, user_id):
         # Return True for now. Normally it will send a message encrypted with searcher’s pubkey.
         return True
 
@@ -220,8 +221,16 @@ class DiscoveryNode(Node):
         self.user_registry = dict()
         discovery_nodes.append(self)
 
-    def initiate_registration(self, user):
-        # TODO: Registration initiation according to the discussions we had in our meeting
+    def initiate_registration(self, user, selected_discovery_nodes):
+        """
+        Dummy function for now. This function will initiate registration by authenticating the user through two-factor authentication
+        using DKIM signatures to check the integrity of the authentication email. 
+        
+        Verifying DKIM signatures involves checking DNS records for the server.
+        To fit this into my threat model, k (threshold) number of discovery nodes should perform this verification
+        and if all of them verify that the response email from the sender is unaltered and genuine, this function should
+        return True. Otherwise, it should return False.
+        """
         return True
 
     def register(self, encrypted_message):
@@ -237,15 +246,16 @@ class DiscoveryNode(Node):
         # Each of the data tuples is encrypted with one discovery server's pubkey.
         user_id, session_key = self.decrypt(message.payload.pop())
         if user_id not in self.user_registry.keys():
+            print(f'User with ID {user_id} does not exist. Creating a fake user record.')
             # Create a fake user entry
             fake_pubkey = RSA.generate(2048).publickey().export_key()
             fake_loc = str(uuid.uuid4())
             secret = fake_pubkey + b' --USER_LOC-- ' + \
                 bytes(fake_loc, encoding='utf-8')
             fake_secret = secret if (len(secret) % 2 == 0) else secret + b' '
+            User.register(self, fake_id=user_id, fake_secret=fake_secret)
             print(
                 f'Discovery node {self.id} created a fake user record with ID {user_id} and secret {secret}')
-            User.register(self, fake_id=user_id, fake_secret=fake_secret)
         ciphertext, nonce = self.aes_encrypt(
             user_id + ' ' + self.user_registry[user_id], session_key)
         message.payload.insert(0, [ciphertext[0], nonce])
@@ -256,7 +266,6 @@ class Message:
     def __init__(self, header, payload):
         self.header = header
         self.payload = payload
-
 
 def initiate_network(num_discovery_nodes, num_relay_nodes, num_users):
     global discovery_nodes
