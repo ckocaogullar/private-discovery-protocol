@@ -105,6 +105,14 @@ class Node:
     def _combine_secret(self, secret_pieces):
         return sss.combine(secret_pieces)
 
+    def _detect_message_type(self, message):
+        if isinstance(message.payload, list):
+            if message.payload[0] == 'REGISTRATION':
+                return 'REGISTRATION'
+            return 'DISCOVERY'
+        else:
+            return 'PING'
+
 
 class User(Node):
     global sss
@@ -137,28 +145,39 @@ class User(Node):
         secret = self.secret if not fake_secret else fake_secret
         u_id = self.id if not fake_id else fake_id
         secret_pieces = self._divide_secret(secret, threshold, n)
+        targets = discovery_nodes.copy()
+        payload = list()
         if fake_id or self.request_registration():
             for i in range(n):
-                registration_message = u_id + ', ' + secret_pieces[i]
+                registration_message = 'registration_flag' + \
+                    u_id + ', ' + secret_pieces[i]
                 d_pubkey = discovery_nodes[i].pubkey
-                encrypted_registration_message, session_key = self.encrypt(
-                    registration_message, d_pubkey)
-                discovery_nodes[i].register(encrypted_registration_message)
+                encrypted_registration_msg = self.encrypt(
+                    registration_message, d_pubkey)[0]
+                payload.append(encrypted_registration_msg)
+                payload.insert(0, 'REGISTRATION')
+            message = self.prepare_message(targets, payload)
+            self.pass_message(message)
             if not fake_secret:
                 for n in relay_nodes:
                     n.address_book[self.id] = self
+        return secret
 
     def lookup_user(self, user_id):
+        print('\n---------------------------------------------')
+        print('--------------STARTING LOOKUP----------------')
+        print('---------------------------------------------\n')
         print(
             f'Searcher with ID {self.id} is looking up searchee with ID {user_id}')
         selected_discovery_nodes = random.sample(discovery_nodes, k=threshold)
         payload = list()
         self.sym_keys = list()
         for node in selected_discovery_nodes:
-            tup, session_key = self.encrypt(user_id, node.pubkey)
-            enc_session_key, nonce, tag, ciphertext = [x for x in tup]
+            encrypted_discovery_msg, session_key = self.encrypt(
+                'discovery_flag' + user_id, node.pubkey)
+            nonce = encrypted_discovery_msg[1]
             self.sym_keys.append((session_key, nonce))
-            payload.append(tup)
+            payload.append(encrypted_discovery_msg)
         message = self.prepare_message(
             selected_discovery_nodes, payload, anonymous=True)
         self.pass_message(message)
@@ -180,7 +199,7 @@ class User(Node):
 
     def ping_user(self, user_id):
         payload, session_key = self.encrypt(
-            'ping' + 'separator' + self.id + 'separator' + str(self.pubkey) + 'separator' + self.loc, self.address_book[user_id][0])
+            'ping_flag' + 'separator' + self.id + 'separator' + str(self.pubkey) + 'separator' + self.loc, self.address_book[user_id][0])
         message = self.prepare_message([user_id], payload)
         self.pass_message(message)
 
@@ -199,18 +218,13 @@ class User(Node):
             secrets).split(' --USER_LOC-- ')
         searchee_pubkey = combined_secret[0].strip()
         searchee_loc = combined_secret[1].strip()
-        print(f'{self.id} completed their lookup for {searchee_id}. Adding to the address book as public key: {searchee_pubkey} and location {searchee_loc}')
+        print(f'\n{self.id} completed their lookup for {searchee_id}. Adding to the address book as public key: {searchee_pubkey} and location {searchee_loc}')
         self.address_book[searchee_id] = (searchee_pubkey, searchee_loc)
+        print('\n---------------------------------------------')
+        print('--------------LOOKUP COMPLETED----------------')
+        print('---------------------------------------------\n')
         print(f'{self.id} pinging {searchee_id}')
         self.ping_user(searchee_id)
-
-    def _detect_message_type(self, message):
-        if isinstance(message.payload, list):
-            return 'DISCOVERY'
-        elif 'ping' in self.decrypt(message.payload)[0]:
-            return 'PING'
-        else:
-            return 'DEFAULT'
 
 
 class DiscoveryNode(Node):
@@ -225,7 +239,7 @@ class DiscoveryNode(Node):
         """
         Dummy function for now. This function will initiate registration by authenticating the user through two-factor authentication
         using DKIM signatures to check the integrity of the authentication email. 
-        
+
         Verifying DKIM signatures involves checking DNS records for the server.
         To fit this into my threat model, k (threshold) number of discovery nodes should perform this verification
         and if all of them verify that the response email from the sender is unaltered and genuine, this function should
@@ -233,33 +247,39 @@ class DiscoveryNode(Node):
         """
         return True
 
-    def register(self, encrypted_message):
-        message, session_key = self.decrypt(encrypted_message)
-        user_id = str(message).split(',')[0].strip()
-        secret_piece = str(message).split(',')[1].strip()
-        print(
-            f'Discovery node {self.id} registering user {user_id}')
-        self.user_registry[user_id] = secret_piece
-
     def process_message(self, message):
-        # Process discovery message. Payload consists of a list of data tuples.
-        # Each of the data tuples is encrypted with one discovery server's pubkey.
-        user_id, session_key = self.decrypt(message.payload.pop())
-        if user_id not in self.user_registry.keys():
-            print(f'User with ID {user_id} does not exist. Creating a fake user record.')
-            # Create a fake user entry
-            fake_pubkey = RSA.generate(2048).publickey().export_key()
-            fake_loc = str(uuid.uuid4())
-            secret = fake_pubkey + b' --USER_LOC-- ' + \
-                bytes(fake_loc, encoding='utf-8')
-            fake_secret = secret if (len(secret) % 2 == 0) else secret + b' '
-            User.register(self, fake_id=user_id, fake_secret=fake_secret)
-            print(
-                f'Discovery node {self.id} created a fake user record with ID {user_id} and secret {secret}')
-        ciphertext, nonce = self.aes_encrypt(
-            user_id + ' ' + self.user_registry[user_id], session_key)
-        message.payload.insert(0, [ciphertext[0], nonce])
+        """
+        Process discovery message. Payload consists of a list of data tuples.
+        Each of the data tuples is encrypted with one discovery server's pubkey.
+        """
+        encrypted_payload = message.payload.pop()
+        decrypted_payload, session_key = self.decrypt(encrypted_payload)
+        if self._detect_message_type(message) == 'REGISTRATION':
+            user_id, secret_piece = [x.strip() for x in decrypted_payload.replace(
+                'registration_flag', '').split(',')]
+            print(f'\nDiscovery node {self.id} registering user {user_id}')
+            self.user_registry[user_id] = secret_piece
+            message.payload.insert(1, encrypted_payload)
+        elif self._detect_message_type(message) == 'DISCOVERY':
+            user_id = decrypted_payload.replace('discovery_flag', '').strip()
+            if user_id not in self.user_registry.keys():
+                print(
+                    f'\nUser with ID {user_id} does not exist. Creating a fake user record.\n')
+                secret = self.create_fake_user(user_id)
+                print(
+                    f'\nDiscovery node {self.id} created a fake user record with ID {user_id} and secret {secret}\n')
+            ciphertext, nonce = self.aes_encrypt(
+                user_id + ' ' + self.user_registry[user_id], session_key)
+            message.payload.insert(0, [ciphertext[0], nonce])
         self.pass_message(message)
+
+    def create_fake_user(self, user_id):
+        fake_pubkey = RSA.generate(2048).publickey().export_key()
+        fake_loc = str(uuid.uuid4())
+        secret = fake_pubkey + b' --USER_LOC-- ' + \
+            bytes(fake_loc, encoding='utf-8')
+        fake_secret = secret if (len(secret) % 2 == 0) else secret + b' '
+        return User.register(self, fake_id=user_id, fake_secret=fake_secret)
 
 
 class Message:
@@ -267,11 +287,14 @@ class Message:
         self.header = header
         self.payload = payload
 
+
 def initiate_network(num_discovery_nodes, num_relay_nodes, num_users):
     global discovery_nodes
     global relay_nodes
     global public_address_book
-
+    print('\n---------------------------------------------')
+    print('------------INITIATING NETWORK---------------')
+    print('---------------------------------------------\n')
     for i in range(num_discovery_nodes):
         node = DiscoveryNode()
         print(f'Discovery node created with ID {node.id}')
@@ -292,3 +315,7 @@ def initiate_network(num_discovery_nodes, num_relay_nodes, num_users):
 
     for node in relay_nodes:
         node.address_book = public_address_book.copy()
+
+    print('\n---------------------------------------------')
+    print('-------------NETWORK INITIATED---------------')
+    print('---------------------------------------------\n')

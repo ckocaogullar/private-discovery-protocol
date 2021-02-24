@@ -1,25 +1,18 @@
-import rsa
-import shamir_mnemonic as shamir
 import nodes
-from SSSA import sssa
 
 
 def main():
     nodes.initiate_network(5, 10, 0)
 
-    user1 = nodes.User("ceren")
-    user2 = nodes.User("furkan")
+    user_1 = nodes.User("Alice")
+    user_2 = nodes.User("Bob")
 
-   # print(user1.id, ' ', user1.pubkey)
-   # print(user2.id, ' ', user1.pubkey)
+    user_1.register()
+    user_2.register()
 
-    user1.register()
-    user2.register()
-
-    user1.lookup_user("furkan")
-    user1.lookup_user("yekta")
-    # for i in range(len(discovery_nodes)):
-    #    print(discovery_nodes[i].user_registry)
+    user_1.lookup_user("Bob")
+    # Alice looks up a user that does not exist in the network
+    user_1.lookup_user("Carol")
 
 
 if __name__ == "__main__":
