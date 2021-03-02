@@ -3,7 +3,6 @@
 # MPhil in Advanced Computer Science Project 2020-2021
 # Simulation for A Private Node Discovery Protocol for Anonymous Networks
 
-import rsa
 import uuid
 import random
 from SSSA import sssa
@@ -11,9 +10,12 @@ from Crypto.PublicKey import RSA
 from Crypto.Random import get_random_bytes
 from Crypto.Cipher import AES, PKCS1_OAEP
 
+# TODO: Constants should be UPPERCASE
 threshold = 3
 path_length = 3
 
+# TODO: These should be part of a `Network` struct/object and passed as a reference in the
+# `__init__()` constructors. That will simplify testing a lot
 sss = sssa()
 discovery_nodes = list()
 relay_nodes = list()
@@ -21,12 +23,9 @@ public_address_book = dict()
 
 
 class Node:
-    global threshold
-    global path_length
-    global public_address_book
+    # You don't need global if you do not write to the variables
 
     def __init__(self):
-        (pubkey, privkey) = rsa.newkeys(256)
         key = RSA.generate(2048)
         self.pubkey = key.publickey().export_key()
         self.privkey = key.export_key()
@@ -34,6 +33,7 @@ class Node:
         self.loc = str(uuid.uuid4())
         self.address_book = public_address_book.copy()
 
+    # TODO: Most of this method should be an external function
     def encrypt(self, data, recipient_key):
         # We use a hybrid encryption scheme to be able to encrypt an arbitrary amount of data (RSA + AES)
         session_key = get_random_bytes(16)
@@ -53,6 +53,7 @@ class Node:
         data = self.aes_decrypt(session_key, ciphertext, nonce)
         return data, session_key
 
+    # TODO: `self` is unused here. Therefore, best to have this not as a method but as a function
     def aes_encrypt(self, data, session_key):
         cipher = AES.new(session_key, AES.MODE_EAX)
         return cipher.encrypt_and_digest(bytes(data, encoding='utf-8')), cipher.nonce
@@ -86,6 +87,8 @@ class Node:
         header = [x.id if isinstance(x, Node) else x for x in path]
         return Message(header, payload)
 
+    # TODO: Same for all following ones: these do not access internal state and
+    # therefore should be functions instead of methods
     def _tuple_to_str(self, tup):
         string = ''
         for i in range(len(tup)):
@@ -275,6 +278,8 @@ class DiscoveryNode(Node):
     def create_fake_user(self, user_id):
         fake_pubkey = RSA.generate(2048).publickey().export_key()
         fake_loc = str(uuid.uuid4())
+
+        # TODO: I'd suggest making `b' --USER_LOC-- '`
         secret = fake_pubkey + b' --USER_LOC-- ' + \
             bytes(fake_loc, encoding='utf-8')
         fake_secret = secret if (len(secret) % 2 == 0) else secret + b' '
@@ -288,24 +293,22 @@ class Message:
 
 
 def initiate_network(num_discovery_nodes, num_relay_nodes, num_users):
-    global discovery_nodes
-    global relay_nodes
-    global public_address_book
+    # TODO: Same here: only need to be global if you replace the reference
     print('\n---------------------------------------------')
     print('------------INITIATING NETWORK---------------')
     print('---------------------------------------------\n')
-    for i in range(num_discovery_nodes):
+    for _ in range(num_discovery_nodes):
         node = DiscoveryNode()
         print(f'Discovery node created with ID {node.id}')
         public_address_book[node.id] = node
 
-    for i in range(num_relay_nodes):
+    for _ in range(num_relay_nodes):
         node = Node()
         relay_nodes.append(node)
         print(f'Relay node created with ID {node.id}')
         public_address_book[node.id] = node
 
-    for i in range(num_users):
+    for _ in range(num_users):
         node = User()
         print(f'User created with ID {node.id}')
 
