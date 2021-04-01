@@ -1,15 +1,16 @@
-import nodes
+from nodes import Node, DiscoveryNode, User
+from network import Network
 
 
 def main():
-    nodes.initiate_network(5, 10, 0)
+    network = Network(num_discovery_nodes=5, num_relay_nodes=10, num_users=0)
 
-    user_1 = nodes.User("Alice")
-    user_2 = nodes.User("Bob")
+    user_1 = User(network, "Alice")
+    user_2 = User(network, "Bob")
 
     user_1.register()
     user_2.register()
-
+    
     user_1.lookup_user("Bob")
     # Alice looks up a user that does not exist in the network
     user_1.lookup_user("Carol")
