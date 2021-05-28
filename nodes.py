@@ -92,6 +92,8 @@ class User(Node):
         secret = self.pubkey + b' --USER_LOC-- ' + \
             bytes(self.loc, encoding='utf-8')
         self.secret = secret if (len(secret) % 2 == 0) else secret + b' '
+        # A buffer for received lookup responses. This list consists of elements that are tuples of type (discovery_node_id, response_message)
+        self.lookup_response_buffer = list()
 
         # Digital signature public verification key (svk), private signing key pair (ssk)
         self.svk, self.ssk = crypto.generate_key_pair()
@@ -136,22 +138,27 @@ class User(Node):
         selected_discovery_nodes = random.sample(
             self.network.discovery_nodes, k=THRESHOLD)
         payload = list()
-        self.sym_keys = list()
+        self.sym_keys = dict()
         for node in selected_discovery_nodes:
             encrypted_discovery_msg, session_key = crypto.encrypt(
                 user_id, node.pubkey)
             nonce = encrypted_discovery_msg[1]
-            self.sym_keys.append((session_key, nonce))
+            self.sym_keys[node.id] = (session_key, nonce)
             payload = encrypted_discovery_msg
-            # payload.insert(0, 'DISCOVERY')
             message = self.prepare_message(
                 node, payload, 'DISCOVERY', anonymous=True)
-        self.pass_message(message)
+            self.pass_message(message)
 
     def process_message(self, message):
         message_type = message.detect_type()
         if message_type == 'DISCOVERY':
-            self._complete_lookup(message)
+            print(
+                f'{self.id} received lookup response from discovery node {message.payload[0]}')
+            self.lookup_response_buffer.append(
+                (message.payload[0], (message.payload[1], message.payload[2])))
+            if len(self.lookup_response_buffer) >= THRESHOLD:
+                print(f'{self.id} received lookup responses from all {len(self.lookup_response_buffer)} discovery nodes, processing received information.')
+                self._complete_lookup()
         elif message_type == 'PING':
             sender, sender_pubkey, sender_loc = [
                 x.strip() for x in crypto.decrypt(message.payload, self.privkey)[0].split('separator')[1:]]
@@ -174,11 +181,14 @@ class User(Node):
         # Return True for now. Normally it will send a message encrypted with searcher’s pubkey.
         return True
 
-    def _complete_lookup(self, message):
+    def _complete_lookup(self):
         secrets = []
-        for i in range(len(message.payload)):
+        for response in self.lookup_response_buffer:
+            discovery_node_id = response[0]
+            ciphertext, nonce = response[1][0], response[1][1]
             decrypted_message = crypto.aes_decrypt(
-                self.sym_keys[i][0], message.payload[i][0], message.payload[i][1]).split()
+                self.sym_keys[discovery_node_id][0], ciphertext, self.sym_keys[discovery_node_id][1]).split()
+            print(decrypted_message[1])
             secrets.append(decrypted_message[1])
         searchee_id = decrypted_message[0]
         combined_secret = crypto.combine_secret(
@@ -230,7 +240,8 @@ class DiscoveryNode(Node):
             message.payload, self.privkey)
         user_id, secret_piece, svk = [x.strip()
                                       for x in decrypted_payload.split(',')]
-        print(f'Discovery node {self.id} registering user {user_id}\n')
+        print(
+            f'Discovery node {self.id} registering user {user_id}\n')
         user_entry = UserEntry(secret_piece, svk)
         self.user_registry[user_id] = user_entry
         self.pass_message(message)
@@ -249,11 +260,27 @@ class DiscoveryNode(Node):
                 f'\nDiscovery node {self.id} found user with ID {user_id} in its user registry\n')
             ciphertext, nonce = crypto.aes_encrypt(
                 self.user_registry[user_id].secret_piece, session_key)
-        message.payload = [ciphertext, nonce]
+        message.payload = [self.id, ciphertext, nonce]
         self.pass_message(message)
 
     def update_user_data(message):
         pass
+
+    """
+     elif message.detect_type() == 'DISCOVERY':
+            asked_hash = decrypted_payload.replace(
+                'discovery_flag', '').strip()
+            user_found = False
+            for hashes in self.user_registry.keys():
+                if asked_hash in hashes:
+                    ciphertext, nonce = crypto.aes_encrypt(
+                        asked_hash + ' ' + self.user_registry[hashes], session_key)
+                    message.payload.insert(0, [ciphertext[0], nonce])
+                    print(f"User with hash {asked_hash} successfully found.")
+                    user_found = True
+            if not user_found:
+                print(f"User with hash {asked_hash} not found.")
+    """
 
 
 class Message:
