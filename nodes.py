@@ -161,7 +161,7 @@ class User(Node):
                 self._complete_lookup()
         elif message_type == 'PING':
             sender, sender_pubkey, sender_loc = [
-                x.strip() for x in crypto.decrypt(message.payload, self.privkey)[0].split('separator')[1:]]
+                x.strip() for x in crypto.decrypt(message.payload, self.privkey)[0].split('separator')]
             if self._authenticate_searcher(sender):
                 print(
                     f'Searcher with ID {sender} and location {sender_loc} authenticated by searchee {self.id}')
@@ -173,8 +173,8 @@ class User(Node):
 
     def ping_user(self, user_id):
         payload, session_key = crypto.encrypt(
-            'ping_flag' + 'separator' + self.id + 'separator' + str(self.pubkey) + 'separator' + self.loc, self.address_book[user_id][0])
-        message = self.prepare_message([user_id], payload, 'PING')
+            self.id + 'separator' + str(self.pubkey) + 'separator' + self.loc, self.address_book[user_id][0])
+        message = self.prepare_message(user_id, payload, 'PING')
         self.pass_message(message)
 
     def _authenticate_searcher(self, user_id):
@@ -183,25 +183,36 @@ class User(Node):
 
     def _complete_lookup(self):
         secrets = []
+        user_found_flag = True
         for response in self.lookup_response_buffer:
             discovery_node_id = response[0]
             ciphertext, nonce = response[1][0], response[1][1]
-            decrypted_message = crypto.aes_decrypt(
-                self.sym_keys[discovery_node_id][0], ciphertext, self.sym_keys[discovery_node_id][1]).split()
-            print(decrypted_message[1])
-            secrets.append(decrypted_message[1])
+            decrypted_message = [x.strip() for x in crypto.aes_decrypt(
+                self.sym_keys[discovery_node_id][0], ciphertext, nonce).split()]
+            if decrypted_message[1] in set(item. name for item in ErrorCodes):
+                print(f'{self.id} received error code {decrypted_message[1]}')
+                user_found_flag = False
+                break
+            else:
+                secrets.append(decrypted_message[1])
         searchee_id = decrypted_message[0]
-        combined_secret = crypto.combine_secret(
-            secrets).split(' --USER_LOC-- ')
-        searchee_pubkey = combined_secret[0].strip()
-        searchee_loc = combined_secret[1].strip()
-        print(f'\n{self.id} completed their lookup for {searchee_id}. Adding to the address book as public key: {searchee_pubkey} and location {searchee_loc}')
-        self.address_book[searchee_id] = (searchee_pubkey, searchee_loc)
-        print('\n---------------------------------------------')
-        print('--------------LOOKUP COMPLETED----------------')
-        print('---------------------------------------------\n')
-        print(f'{self.id} pinging {searchee_id}')
-        self.ping_user(searchee_id)
+        if user_found_flag:
+            combined_secret = crypto.combine_secret(
+                secrets).split(' --USER_LOC-- ')
+            searchee_pubkey = combined_secret[0].strip()
+            searchee_loc = combined_secret[1].strip()
+            print(f'\n{self.id} completed their lookup for {searchee_id}. Adding to the address book as public key: {searchee_pubkey} and location {searchee_loc}')
+            self.address_book[searchee_id] = (searchee_pubkey, searchee_loc)
+            print('\n---------------------------------------------')
+            print('--------------LOOKUP COMPLETED----------------')
+            print('---------------------------------------------\n')
+            print(f'{self.id} pinging {searchee_id}')
+            self.ping_user(searchee_id)
+        else:
+            print(f'User {searchee_id} could not be discovered.')
+            print('\n---------------------------------------------')
+            print('--------------LOOKUP FAILED----------------')
+            print('---------------------------------------------\n')
 
 
 class DiscoveryNode(Node):
@@ -253,14 +264,14 @@ class DiscoveryNode(Node):
         if user_id not in self.user_registry.keys():
             print(
                 f'\nUser with ID {user_id} does not exist in discovery node {self.id}. Responding with error code {ErrorCodes.NO_USER_RECORD.name}.\n')
-            ciphertext, nonce = crypto.aes_encrypt(
-                ErrorCodes.NO_USER_RECORD.name, session_key)
+            ciphertext, nonce = crypto.aes_encrypt(user_id + ' ' +
+                                                   ErrorCodes.NO_USER_RECORD.name, session_key)
         else:
             print(
                 f'\nDiscovery node {self.id} found user with ID {user_id} in its user registry\n')
-            ciphertext, nonce = crypto.aes_encrypt(
-                self.user_registry[user_id].secret_piece, session_key)
-        message.payload = [self.id, ciphertext, nonce]
+            ciphertext, nonce = crypto.aes_encrypt(user_id + ' ' +
+                                                   self.user_registry[user_id].secret_piece, session_key)
+        message.payload = [self.id, ciphertext[0], nonce]
         self.pass_message(message)
 
     def update_user_data(message):

@@ -11,7 +11,7 @@ def main():
     user_1.register()
     user_2.register()
 
-    user_1.lookup_user("Carol")
+    user_1.lookup_user("Bob")
     # Alice looks up a user that does not exist in the network
     # user_1.lookup_user("Carol")
 
