@@ -2,6 +2,8 @@ from SSSA import sssa
 from Crypto.PublicKey import RSA
 from Crypto.Random import get_random_bytes
 from Crypto.Cipher import AES, PKCS1_OAEP
+from Crypto.Signature import pkcs1_15
+from Crypto.Hash import SHA384
 
 sss = sssa()
 
@@ -19,6 +21,8 @@ def encrypt(data, recipient_key):
 
 
 def decrypt(data_tuple, privkey):
+    assert 4 == len(
+        data_tuple), "Data tuple has too many or too few elements"
     enc_session_key, nonce, tag, ciphertext = [x for x in data_tuple]
     # Decrypt the session key with the private RSA key
     cipher_rsa = PKCS1_OAEP.new(RSA.import_key(privkey))
@@ -40,7 +44,10 @@ def aes_decrypt(key, ciphertext, nonce):
 
 
 def generate_key_pair():
-    return RSA.generate(2048)
+    key = RSA.generate(2048)
+    pubkey = key.publickey().export_key()
+    privkey = key.export_key()
+    return pubkey, privkey
 
 
 # Shamir's Secret Sharing
@@ -51,3 +58,19 @@ def divide_secret(secret, k, n):
 
 def combine_secret(secret_pieces):
     return sss.combine(secret_pieces)
+
+# Digital Signature
+
+
+def sign(key, msg):
+    signer = pkcs1_15.new(key)
+    hash = SHA384.new()
+    hash.update(msg)
+    return signer.sign(hash), msg
+
+
+def verify(key, signature, msg):
+    verifier = pkcs1_15.new(key)
+    hash = SHA384.new()
+    hash.update(msg)
+    return verifier.verify(hash, signature)

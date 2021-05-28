@@ -7,18 +7,34 @@
 import uuid
 import random
 import crypto
+import enum
+import string
 from network import Network
+from collections import namedtuple
 
 THRESHOLD = 3
 PATH_LENGTH = 3
 
+UserEntry = namedtuple('UserEntry', 'secret_piece, svk')
+
+
+class ErrorCodes(enum.Enum):
+    NO_USER_RECORD = 1
+    NODE_NOT_AVAILABLE = 2
+
+
+class MessageType(enum.Enum):
+    REGISTRATION = 1
+    DISCOVERY = 2
+    UPDATE = 3
+    PING = 4
+
 
 class Node:
     def __init__(self, network):
-        key = crypto.generate_key_pair()
-        self.pubkey = key.publickey().export_key()
-        self.privkey = key.export_key()
-        self.id = str(uuid.uuid4())
+        self.pubkey, self.privkey = crypto.generate_key_pair()
+        self.id = ''.join(random.SystemRandom().choice(
+            string.ascii_uppercase + string.digits) for _ in range(3))
         self.loc = str(uuid.uuid4())
         self.network = network
         self.address_book = self.network.public_address_book.copy()
@@ -32,6 +48,7 @@ class Node:
                 self.address_book[next_hop].process_message(message)
                 self.address_book[next_hop].pass_message(message)
             else:
+                self.address_book.keys()
                 print(
                     f'{self.id} does not know node {next_hop}, dropping the message.')
 
@@ -39,14 +56,26 @@ class Node:
         # Need this declaration for overloading
         pass
 
-    def prepare_message(self, targets, payload, anonymous=False):
+    def prepare_message_old(self, targets, payload, type, anonymous=False):
         selected_relay_nodes = random.sample(
             self.network.relay_nodes, k=PATH_LENGTH * 2)
         path = targets + selected_relay_nodes[PATH_LENGTH:]
         if anonymous:
             path = [self.id] + selected_relay_nodes[:PATH_LENGTH] + path
         header = [x.id if isinstance(x, Node) else x for x in path]
-        return Message(header, payload)
+        return Message(header, payload, type)
+
+    def prepare_message(self, target, payload, type, anonymous=False):
+        selected_relay_nodes = random.sample(
+            self.network.relay_nodes, k=PATH_LENGTH * 2)
+        path = [target] + selected_relay_nodes[PATH_LENGTH:]
+        if anonymous:
+            path = [self.id] + selected_relay_nodes[:PATH_LENGTH] + path
+        header = [x.id if isinstance(x, Node) else x for x in path]
+        return Message(header, payload, type)
+
+    def update_address_book(self, key, node):
+        self.address_book[key] = node
 
 
 class User(Node):
@@ -64,6 +93,9 @@ class User(Node):
             bytes(self.loc, encoding='utf-8')
         self.secret = secret if (len(secret) % 2 == 0) else secret + b' '
 
+        # Digital signature public verification key (svk), private signing key pair (ssk)
+        self.svk, self.ssk = crypto.generate_key_pair()
+
         print(f'User created with ID {self.id} and location {self.loc}')
 
     def request_registration(self):
@@ -79,22 +111,20 @@ class User(Node):
         secret = self.secret if not fake_secret else fake_secret
         u_id = self.id if not fake_id else fake_id
         secret_pieces = crypto.divide_secret(secret, THRESHOLD, n)
-        targets = self.network.discovery_nodes.copy()
-        payload = list()
-        if fake_id or self.request_registration():
-            for i in range(n):
-                registration_message = 'registration_flag' + \
-                    u_id + ', ' + secret_pieces[i]
-                d_pubkey = self.network.discovery_nodes[i].pubkey
+        if self.request_registration():
+            # Make yourself known to discovery nodes
+            for relay_node in self.network.relay_nodes:
+                relay_node.update_address_book(self.id, self)
+            # Register to discovery nodes
+            for target in self.network.discovery_nodes.copy():
+                registration_message = u_id + ', ' + \
+                    secret_pieces.pop() + ', ' + str(self.svk)
+                d_pubkey = target.pubkey
                 encrypted_registration_msg = crypto.encrypt(
                     registration_message, d_pubkey)[0]
-                payload.append(encrypted_registration_msg)
-                payload.insert(0, 'REGISTRATION')
-            message = self.prepare_message(targets, payload)
-            self.pass_message(message)
-            if not fake_secret:
-                for n in self.network.relay_nodes:
-                    n.address_book[self.id] = self
+                payload = encrypted_registration_msg
+                message = self.prepare_message(target, payload, 'REGISTRATION')
+                self.pass_message(message)
         return secret
 
     def lookup_user(self, user_id):
@@ -109,12 +139,13 @@ class User(Node):
         self.sym_keys = list()
         for node in selected_discovery_nodes:
             encrypted_discovery_msg, session_key = crypto.encrypt(
-                'discovery_flag' + user_id, node.pubkey)
+                user_id, node.pubkey)
             nonce = encrypted_discovery_msg[1]
             self.sym_keys.append((session_key, nonce))
-            payload.append(encrypted_discovery_msg)
-        message = self.prepare_message(
-            selected_discovery_nodes, payload, anonymous=True)
+            payload = encrypted_discovery_msg
+            # payload.insert(0, 'DISCOVERY')
+            message = self.prepare_message(
+                node, payload, 'DISCOVERY', anonymous=True)
         self.pass_message(message)
 
     def process_message(self, message):
@@ -129,13 +160,14 @@ class User(Node):
                     f'Searcher with ID {sender} and location {sender_loc} authenticated by searchee {self.id}')
                 self.address_book[sender] = (sender_pubkey, sender_loc)
         else:
+            print(message.payload)
             print(
                 f'Received a regular message with payload {crypto.decrypt(message.payload, self.privkey)[0]}')
 
     def ping_user(self, user_id):
         payload, session_key = crypto.encrypt(
             'ping_flag' + 'separator' + self.id + 'separator' + str(self.pubkey) + 'separator' + self.loc, self.address_book[user_id][0])
-        message = self.prepare_message([user_id], payload)
+        message = self.prepare_message([user_id], payload, 'PING')
         self.pass_message(message)
 
     def _authenticate_searcher(self, user_id):
@@ -163,6 +195,7 @@ class User(Node):
 
 
 class DiscoveryNode(Node):
+
     def __init__(self, network):
         super().__init__(network)
         self.user_registry = dict()
@@ -171,7 +204,7 @@ class DiscoveryNode(Node):
     def initiate_registration(self, user, selected_discovery_nodes):
         """
         Dummy function for now. This function will initiate registration by authenticating the user through two-factor authentication
-        using DKIM signatures to check the integrity of the authentication email. 
+        using DKIM signatures to check the integrity of the authentication email.
 
         Verifying DKIM signatures involves checking DNS records for the server.
         To fit this into my threat model, k (THRESHOLD) number of discovery nodes should perform this verification
@@ -185,46 +218,49 @@ class DiscoveryNode(Node):
         Process discovery message. Payload consists of a list of data tuples.
         Each of the data tuples is encrypted with one discovery server's pubkey.
         """
-        encrypted_payload = message.payload.pop()
-        decrypted_payload, session_key = crypto.decrypt(
-            encrypted_payload, self.privkey)
         if message.detect_type() == 'REGISTRATION':
-            user_id, secret_piece = [x.strip() for x in decrypted_payload.replace(
-                'registration_flag', '').split(',')]
-            print(f'\nDiscovery node {self.id} registering user {user_id}')
-            self.user_registry[user_id] = secret_piece
-            message.payload.insert(1, encrypted_payload)
+            self._register_user(message)
         elif message.detect_type() == 'DISCOVERY':
-            user_id = decrypted_payload.replace('discovery_flag', '').strip()
-            if user_id not in self.user_registry.keys():
-                print(
-                    f'\nUser with ID {user_id} does not exist. Creating a fake user record.\n')
-                secret = self.create_fake_user(user_id)
-                print(
-                    f'\nDiscovery node {self.id} created a fake user record with ID {user_id} and secret {secret}\n')
-            ciphertext, nonce = crypto.aes_encrypt(
-                user_id + ' ' + self.user_registry[user_id], session_key)
-            message.payload.insert(0, [ciphertext[0], nonce])
+            self._process_discovery_request(message)
+        elif message.detect_type() == 'UPDATE':
+            self._update_user_data(message)
+
+    def _register_user(self, message):
+        decrypted_payload, session_key = crypto.decrypt(
+            message.payload, self.privkey)
+        user_id, secret_piece, svk = [x.strip()
+                                      for x in decrypted_payload.split(',')]
+        print(f'Discovery node {self.id} registering user {user_id}\n')
+        user_entry = UserEntry(secret_piece, svk)
+        self.user_registry[user_id] = user_entry
         self.pass_message(message)
 
-    def create_fake_user(self, user_id):
-        fake_pubkey = crypto.generate_key_pair().publickey().export_key()
-        fake_loc = str(uuid.uuid4())
-        secret = fake_pubkey + b' --USER_LOC-- ' + \
-            bytes(fake_loc, encoding='utf-8')
-        fake_secret = secret if (len(secret) % 2 == 0) else secret + b' '
-        return User.register(self, fake_id=user_id, fake_secret=fake_secret)
+    def _process_discovery_request(self, message):
+        decrypted_payload, session_key = crypto.decrypt(
+            message.payload, self.privkey)
+        user_id = decrypted_payload.strip()
+        if user_id not in self.user_registry.keys():
+            print(
+                f'\nUser with ID {user_id} does not exist in discovery node {self.id}. Responding with error code {ErrorCodes.NO_USER_RECORD.name}.\n')
+            ciphertext, nonce = crypto.aes_encrypt(
+                ErrorCodes.NO_USER_RECORD.name, session_key)
+        else:
+            print(
+                f'\nDiscovery node {self.id} found user with ID {user_id} in its user registry\n')
+            ciphertext, nonce = crypto.aes_encrypt(
+                self.user_registry[user_id].secret_piece, session_key)
+        message.payload = [ciphertext, nonce]
+        self.pass_message(message)
+
+    def update_user_data(message):
+        pass
 
 
 class Message:
-    def __init__(self, header, payload):
+    def __init__(self, header, payload, type):
+        self.type = MessageType[type]
         self.header = header
         self.payload = payload
 
     def detect_type(self):
-        if isinstance(self.payload, list):
-            if self.payload[0] == 'REGISTRATION':
-                return 'REGISTRATION'
-            return 'DISCOVERY'
-        else:
-            return 'PING'
+        return self.type.name
