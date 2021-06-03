@@ -1,41 +1,32 @@
-# Ceren Kocaoğullar, ck596
-# University of Cambridge
-# MPhil in Advanced Computer Science Project 2020-2021
-# Simulation for A Private Node Discovery Protocol for Anonymous Networks
+"""
+Ceren Kocaoğullar, ck596
+University of Cambridge
+MPhil in Advanced Computer Science Project 2020-2021
+Simulation Tool for Privacy-Preserving User Discovery in Anonymous Communication Networks
+"""
 
-
-import uuid
+# Python modules
 import random
-import crypto
-import enum
 import string
+
+# Inter-project modules
 from network import Network
-from collections import namedtuple
-
-THRESHOLD = 3
-PATH_LENGTH = 3
-
-UserEntry = namedtuple('UserEntry', 'secret_piece, svk')
-
-
-class ErrorCodes(enum.Enum):
-    NO_USER_RECORD = 1
-    NODE_NOT_AVAILABLE = 2
-
-
-class MessageType(enum.Enum):
-    REGISTRATION = 1
-    DISCOVERY = 2
-    UPDATE = 3
-    PING = 4
+from const import PATH_LENGTH, THRESHOLD, UserEntry, ErrorCodes, MessageType, PuddingType
+import crypto
+import math
 
 
 class Node:
     def __init__(self, network):
+        # Public - private key pair for encrypting all communications
         self.pubkey, self.privkey = crypto.generate_key_pair()
+
+        # Pseudorandom strings as Node ID and location
         self.id = ''.join(random.SystemRandom().choice(
             string.ascii_uppercase + string.digits) for _ in range(3))
-        self.loc = str(uuid.uuid4())
+        self.loc = ''.join(random.SystemRandom().choice(
+            string.ascii_uppercase + string.digits) for _ in range(3))
+        
         self.network = network
         self.address_book = self.network.public_address_book.copy()
 
@@ -56,15 +47,6 @@ class Node:
         # Need this declaration for overloading
         pass
 
-    def prepare_message_old(self, targets, payload, type, anonymous=False):
-        selected_relay_nodes = random.sample(
-            self.network.relay_nodes, k=PATH_LENGTH * 2)
-        path = targets + selected_relay_nodes[PATH_LENGTH:]
-        if anonymous:
-            path = [self.id] + selected_relay_nodes[:PATH_LENGTH] + path
-        header = [x.id if isinstance(x, Node) else x for x in path]
-        return Message(header, payload, type)
-
     def prepare_message(self, target, payload, type, anonymous=False):
         selected_relay_nodes = random.sample(
             self.network.relay_nodes, k=PATH_LENGTH * 2)
@@ -80,6 +62,7 @@ class Node:
 
 class User(Node):
     def __init__(self, *args):
+        # Input checks
         assert 0 < len(
             args) <= 2, "User constructor can only be called with one or two parameters: Network and [(User ID) or none]."
         assert isinstance(
@@ -91,7 +74,10 @@ class User(Node):
             self.id = args[1]
         secret = self.pubkey + b' --USER_LOC-- ' + \
             bytes(self.loc, encoding='utf-8')
+
+        # User's contact information is their secret. Padding the value for secret sharing.
         self.secret = secret if (len(secret) % 2 == 0) else secret + b' '
+    
         # A buffer for received lookup responses. This list consists of elements that are tuples of type (discovery_node_id, response_message)
         self.lookup_response_buffer = list()
 
@@ -113,21 +99,96 @@ class User(Node):
         secret = self.secret if not fake_secret else fake_secret
         u_id = self.id if not fake_id else fake_id
         secret_pieces = crypto.divide_secret(secret, THRESHOLD, n)
-        if self.request_registration():
-            # Make yourself known to discovery nodes
-            for relay_node in self.network.relay_nodes:
-                relay_node.update_address_book(self.id, self)
-            # Register to discovery nodes
-            for target in self.network.discovery_nodes.copy():
-                registration_message = u_id + ', ' + \
-                    secret_pieces.pop() + ', ' + str(self.svk)
-                d_pubkey = target.pubkey
-                encrypted_registration_msg = crypto.encrypt(
-                    registration_message, d_pubkey)[0]
-                payload = encrypted_registration_msg
-                message = self.prepare_message(target, payload, 'REGISTRATION')
+        if self.network.pudding_type == PuddingType.ID_VERIFIED:
+            if self.request_registration():
+                # Make yourself known to discovery nodes
+                for relay_node in self.network.relay_nodes:
+                    relay_node.update_address_book(self.id, self)
+                # Register to discovery nodes
+                for target in self.network.discovery_nodes.copy():
+                    registration_message = u_id + ', ' + \
+                        secret_pieces.pop() + ', ' + str(self.svk)
+                    d_pubkey = target.pubkey
+                    encrypted_registration_msg = crypto.encrypt(
+                        registration_message, d_pubkey)[0]
+                    payload = encrypted_registration_msg
+                    message = self.prepare_message(target, payload, 'REGISTRATION')
+                    self.pass_message(message)
+            elif self.network.pudding_type == PuddingType.INCOGNITO:
+                # Get pseudorandom salt values using OPRF for the registering user's ID
+                for discovery_node in self.network.discovery_nodes:
+                    salt_dict[discovery_node] = discovery_node.oprf(self.id)
+                """
+                Prepare salted hashes for each discovery server.
+
+                Each discovery server D receives (THRESHOLD-1)-combination-of-all-discovery-servers-many hash values per user.
+                These hashes are used as keys to find the user's secret piece stored in that discovery server. 
+                Each of these hashes use salts of one THRESHOLD-combination-of-all-discovery-servers that include D.
+                """
+                for discovery_node in self.network.discovery_nodes:
+                    combinations_with_discovery_node = [
+                        x for x in self.network.discovery_node_combinations if discovery_node in x]
+                    assert len([x for x in combinations_with_discovery_node if discovery_node not in x]
+                            ) == 0, "Discovery node combinations are picked wrong for the discovery servers"
+                    assert int(math.factorial(len(self.network.discovery_nodes) - 1) / (math.factorial(THRESHOLD - 1) * math.factorial(
+                        len(self.network.discovery_nodes) - THRESHOLD))) == len(combinations_with_discovery_node), "Number of picked combinations is off"
+                    print(f'{self.id} registering to discovery node {discovery_node.id}')
+                    for comb in combinations_with_discovery_node:
+                        print(
+                            f'Registering to node {discovery_node.id} with combination {[x.id for x in comb]} and salts {[salt_dict[d] for d in comb]}')
+                        multi_salted_hash = crypto.hash_with_salts(
+                            [salt_dict[d] for d in comb], self.id)
+                        registration_message += ', ' + multi_salted_hash
+                    print(f'registration_message {registration_message}')
+                    registration_message += ', ' + secret_pieces.pop()
+                    encrypted_registration_msg = crypto.encrypt(
+                        registration_message, discovery_node.pubkey)[0]
+                    payload.append(encrypted_registration_msg)
+                    payload.insert(0, 'REGISTRATION')
+                message = self.prepare_message(targets, payload)
                 self.pass_message(message)
-        return secret
+
+    
+        def incognito_register(self):
+        # Split the secret (user ID and network location) into n pieces
+        n = len(self.network.discovery_nodes)
+        secret_pieces = crypto.divide_secret(self.secret, THRESHOLD, n)
+        targets = self.network.discovery_nodes.copy()
+        payload = list()
+        salt_dict = dict()
+        # Get pseudorandom salt values using OPRF for the registering user's ID
+        for discovery_node in self.network.discovery_nodes:
+            salt_dict[discovery_node] = discovery_node.oprf(self.id)
+        """
+        Prepare salted hashes for each discovery server.
+
+        Each discovery server D receives (THRESHOLD-1)-combination-of-all-discovery-servers-many hash values per user.
+        These hashes are used as keys to find the user's secret piece stored in that discovery server. 
+        Each of these hashes use salts of one THRESHOLD-combination-of-all-discovery-servers that include D.
+        """
+        for discovery_node in self.network.discovery_nodes:
+            registration_message = 'registration_flag'
+            combinations_with_discovery_node = [
+                x for x in self.network.discovery_node_combinations if discovery_node in x]
+            assert len([x for x in combinations_with_discovery_node if discovery_node not in x]
+                       ) == 0, "Discovery node combinations are picked wrong for the discovery servers"
+            assert int(math.factorial(len(self.network.discovery_nodes) - 1) / (math.factorial(THRESHOLD - 1) * math.factorial(
+                len(self.network.discovery_nodes) - THRESHOLD))) == len(combinations_with_discovery_node), "Number of picked combinations is off"
+            print(f'{self.id} registering to discovery node {discovery_node.id}')
+            for comb in combinations_with_discovery_node:
+                print(
+                    f'Registering to node {discovery_node.id} with combination {[x.id for x in comb]} and salts {[salt_dict[d] for d in comb]}')
+                multi_salted_hash = crypto.hash_with_salts(
+                    [salt_dict[d] for d in comb], self.id)
+                registration_message += ', ' + multi_salted_hash
+            print(f'registration_message {registration_message}')
+            registration_message += ', ' + secret_pieces.pop()
+            encrypted_registration_msg = crypto.encrypt(
+                registration_message, discovery_node.pubkey)[0]
+            payload.append(encrypted_registration_msg)
+            payload.insert(0, 'REGISTRATION')
+        message = self.prepare_message(targets, payload)
+        self.pass_message(message)
 
     def lookup_user(self, user_id):
         print('\n---------------------------------------------')
