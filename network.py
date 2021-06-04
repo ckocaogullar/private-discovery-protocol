@@ -13,7 +13,7 @@ temp_key_pairs = list()
 
 
 class Network:
-    def __init__(self, pudding_type, num_discovery_nodes=2, num_relay_nodes=10, num_users=0):
+    def __init__(self, pudding_type, num_discovery_nodes=2, num_relay_nodes=0, num_users=0):
         self.discovery_nodes = list()
         self.relay_nodes = list()
         self.public_address_book = dict()
@@ -21,6 +21,7 @@ class Network:
             num_discovery_nodes, num_relay_nodes, num_users)
         assert pudding_type in PuddingType, "Invalid Pudding type. Must be one of the following: ID_VERIFIED , INCOGNITO"
         self.pudding_type = pudding_type
+        self.tick = 0
 
     def initiate_network(self, num_discovery_nodes, num_relay_nodes, num_users):
         global key_pairs
@@ -94,3 +95,7 @@ class Network:
         else:
             key_pair = node.assign_key_pair()
             key_pairs.append(key_pair)
+
+    def increment_tick(self):
+        self.tick += 1
+        return self.tick
