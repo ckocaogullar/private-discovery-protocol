@@ -79,8 +79,6 @@ class Network:
             self.discovery_nodes, THRESHOLD))]
         for comb in self.discovery_node_combinations:
             comb.sort(key=lambda x: x.id)
-        print(
-            f'discovery_node_combinations {self.discovery_node_combinations}')
 
         print('\n---------------------------------------------')
         print('-------------NETWORK INITIATED---------------')

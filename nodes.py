@@ -11,9 +11,12 @@ import string
 
 # Inter-project modules
 from network import Network
-from const import PATH_LENGTH, THRESHOLD, UserEntry, ErrorCodes, MessageType, PuddingType
+from const import PATH_LENGTH, THRESHOLD, UserEntry, RegistrationData, ErrorCodes, MessageType, PuddingType
 import crypto
 import math
+
+# Representing time with a tick-based approach
+tick = 0
 
 
 class Node:
@@ -38,6 +41,7 @@ class Node:
             return (self.pubkey, self.privkey)
 
     def pass_message(self, message):
+        global tick
         if len(message.header) != 0:
             next_hop = message.header.pop()
             for key in self.address_book.keys():
@@ -51,6 +55,7 @@ class Node:
             self.address_book.keys()
             print(
                 f'{self.id} does not know node {next_hop}, dropping the message.')
+            tick += 1
 
     def process_message(self, message):
         # Need this declaration for overloading
@@ -176,7 +181,7 @@ class User(Node):
             for relay_node in self.network.relay_nodes:
                 relay_node.update_address_book(self.handles, self)
 
-    def lookup_user(self, user_id):
+    def discover_user(self, user_id):
         print('\n---------------------------------------------')
         print('--------------STARTING LOOKUP----------------')
         print('---------------------------------------------\n')
@@ -208,35 +213,47 @@ class User(Node):
     def process_message(self, message):
         message_type = message.detect_type()
         if message_type == 'DISCOVERY':
-            print(
-                f'{self.id} received lookup response from discovery node {message.payload[0]}')
-            self.lookup_response_buffer.append(
-                (message.payload[0], (message.payload[1], message.payload[2])))
-            if len(self.lookup_response_buffer) >= THRESHOLD:
-                print(f'{self.id} received lookup responses from all {len(self.lookup_response_buffer)} discovery nodes, processing received information.')
-                self._complete_lookup()
+            self._process_discovery_message(message)
         elif message_type == 'PING':
-            sender, sender_pubkey, sender_loc = [
-                x.strip() for x in crypto.decrypt(message.payload, self.privkey)[0].split('separator')]
-            if self._authenticate_searcher(sender):
-                print(
-                    f'Searcher with ID {sender} and location {sender_loc} authenticated by searchee {self.id}')
-                self.address_book[sender] = (sender_pubkey, sender_loc)
+            self._process_ping(message)
         else:
             print(
                 f'Received a regular message with payload {crypto.decrypt(message.payload, self.privkey)[0]}')
 
     def ping_user(self, user_id):
         payload, session_key = crypto.encrypt(
-            self.id + 'separator' + str(self.pubkey) + 'separator' + self.loc, self.address_book[user_id][0])
+            self.id + 'separator' + self.pubkey.decode('utf-8') + 'separator' + self.loc, self.address_book[user_id][0])
         message = self.prepare_message(user_id, payload, 'PING')
         self.pass_message(message)
 
-    def _authenticate_searcher(self, user_id):
-        # Return True for now. Normally it will send a message encrypted with searcher’s pubkey.
-        return True
+    def _authenticate_searcher(self, user_id, sender_pubkey, sender_loc):
+        self.discover_user(user_id)
+        return str(self.address_book[user_id].pubkey) == sender_pubkey
 
-    def _complete_lookup(self):
+    def _process_discovery_message(self, message):
+        print(
+            f'{self.id} received lookup response from discovery node {message.payload[0]}')
+        self.lookup_response_buffer.append(
+            (message.payload[0], (message.payload[1], message.payload[2])))
+        if len(self.lookup_response_buffer) >= THRESHOLD:
+            print(f'{self.id} received lookup responses from all {len(self.lookup_response_buffer)} discovery nodes, processing received information.')
+            self._complete_discovery()
+
+    def _process_ping(self, message):
+        sender, sender_pubkey, sender_loc = [
+            x.strip() for x in crypto.decrypt(message.payload, self.privkey)[0].split('separator')]
+        self.address_book[sender] = UserEntry(sender, sender_pubkey, False)
+        print(
+            f'Initiating internal authentication: {self.id} discovering {sender}')
+        if self._authenticate_searcher(sender, sender_pubkey, sender_loc):
+            print(
+                f'Searcher with ID {sender} authenticated by searchee {self.id}')
+        else:
+            self.address_book[sender] = UserEntry(sender, sender_pubkey, False)
+            print(
+                f'Internal authentication for searcher with ID {sender} has failed.')
+
+    def _complete_discovery(self):
         secrets = []
         user_found_flag = True
         for response in self.lookup_response_buffer:
@@ -258,12 +275,15 @@ class User(Node):
             searchee_loc = combined_secret[1].strip()
             print(
                 f'\n{self.id} completed their lookup for {searchee_id}. Adding to the address book.')
-            self.address_book[searchee_id] = (searchee_pubkey, searchee_loc)
+            new_user = not searchee_id in self.address_book.keys()
+            self.address_book[searchee_id] = UserEntry(
+                searchee_pubkey, searchee_loc, True)
             print('\n---------------------------------------------')
             print('--------------LOOKUP COMPLETED----------------')
             print('---------------------------------------------\n')
-            print(f'{self.id} pinging {searchee_id}')
-            self.ping_user(searchee_id)
+            if new_user:
+                print(f'{self.id} pinging {searchee_id}')
+                self.ping_user(searchee_id)
         else:
             print(f'User {searchee_id} could not be discovered.')
             print('\n---------------------------------------------')
@@ -313,7 +333,7 @@ class DiscoveryNode(Node):
         #                              for hash in list(set(user_registry_key))]) if self.network.pudding_type == PuddingType.INCOGNITO else user_registry_key
         print(
             f'Discovery node {self.id} registering user with ID / handles {user_registry_key} with secret piece {secret_piece}\n')
-        user_entry = UserEntry(secret_piece, svk)
+        user_entry = RegistrationData(secret_piece, svk)
 
         self.user_registry[user_registry_key] = user_entry
         self.pass_message(message)
