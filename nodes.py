@@ -11,7 +11,7 @@ import string
 
 # Inter-project modules
 from network import Network
-from const import PATH_LENGTH, THRESHOLD, N,  UserEntry, RegistrationData, ErrorCodes, MessageType, PuddingType
+from const import PATH_LENGTH,  UserEntry, RegistrationData, ErrorCodes, MessageType, PuddingType
 import crypto
 import math
 
@@ -111,7 +111,7 @@ class User(Node):
         # Send registration request to a randomly selected discovery server
         selected_discovery_server = random.choice(self.network.discovery_nodes)
         selected_discovery_servers = random.sample(
-            self.network.discovery_nodes, THRESHOLD)
+            self.network.discovery_nodes, self.network.threshold)
 
         return selected_discovery_server.initiate_registration(self, selected_discovery_servers)
 
@@ -131,7 +131,8 @@ class User(Node):
         self.secret = secret if (len(secret) % 2 == 0) else secret + b' '
 
         # Dividing secret into secret shares
-        self.secret_pieces = crypto.divide_secret(self.secret, THRESHOLD, N)
+        self.secret_pieces = crypto.divide_secret(
+            self.secret, self.network.threshold, self.network.n)
 
         if self.network.pudding_type == PuddingType.ID_VERIFIED:
             self._register_id_verified(flag)
@@ -145,7 +146,7 @@ class User(Node):
         print(
             f'Searcher with ID {self.id} is discovering searchee with ID {user_id}')
         selected_discovery_nodes = random.sample(
-            self.network.discovery_nodes, k=THRESHOLD)
+            self.network.discovery_nodes, k=self.network.threshold)
         self.sym_keys = dict()
 
         if self.network.pudding_type == PuddingType.ID_VERIFIED:
@@ -180,7 +181,8 @@ class User(Node):
         self.secret = secret if (len(secret) % 2 == 0) else secret + b' '
 
         # Dividing secret into secret shares
-        self.secret_pieces = crypto.divide_secret(self.secret, THRESHOLD, N)
+        self.secret_pieces = crypto.divide_secret(
+            self.secret, self.network.threshold, self.network.n)
 
         self.assign_key_pair()
         self.register('UPDATE')
@@ -251,8 +253,8 @@ class User(Node):
                 x for x in self.network.discovery_node_combinations if discovery_node in x]
             assert len([x for x in combinations_with_discovery_node if discovery_node not in x]
                        ) == 0, "Discovery node combinations are picked wrong for the discovery servers"
-            assert int(math.factorial(len(self.network.discovery_nodes) - 1) / (math.factorial(THRESHOLD - 1) * math.factorial(
-                len(self.network.discovery_nodes) - THRESHOLD))) == len(combinations_with_discovery_node), "Number of picked combinations is off"
+            assert int(math.factorial(len(self.network.discovery_nodes) - 1) / (math.factorial(self.network.threshold - 1) * math.factorial(
+                len(self.network.discovery_nodes) - self.network.threshold))) == len(combinations_with_discovery_node), "Number of picked combinations is off"
             print(f'{self.id} registering to discovery node {discovery_node.id}')
 
             for comb in combinations_with_discovery_node:
@@ -296,7 +298,7 @@ class User(Node):
             f'{self.id} received discovery response from discovery node {message.payload[0]}')
         self.discovery_response_buffer.append(
             (message.payload[0], (message.payload[1], message.payload[2])))
-        if len(self.discovery_response_buffer) >= THRESHOLD:
+        if len(self.discovery_response_buffer) >= self.network.threshold:
             print(f'{self.id} received discovery responses from all {len(self.discovery_response_buffer)} discovery nodes, processing received information.')
             self._complete_discovery()
 

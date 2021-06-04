@@ -1,5 +1,5 @@
 # Inter-project modules
-from const import THRESHOLD, N
+from const import THRESHOLD, N, PuddingType
 
 # Python modules
 import json
@@ -8,18 +8,24 @@ import itertools
 
 def main():
     # Limits
-    k_values = [i for i in range(THRESHOLD)]
-    n_values = [i for i in range(N)]
+    k_values = [i for i in range(1, THRESHOLD)]
+    n_values = [i for i in range(1, N)]
+    users = ['Alice', 'Bob']
 
-    scenario_combinations = list(itertools.product(k_values, n_values))
+    # Pudding Types
+    pudding_types = ['INCOGNITO', 'ID_VERIFIED']
+
+    scenario_combinations = list(
+        itertools.product(pudding_types, k_values, n_values))
 
     print(scenario_combinations)
 
     scenarios = dict()
     for scenario in scenario_combinations:
         scenario_dict = {
-            'k': scenario[0],
-            'n': scenario[1]
+            'pudding_type': scenario[0],
+            'k': scenario[1],
+            'n': scenario[2]
         }
         scenario_key = '.'.join(map(str, scenario))
         scenarios[scenario_key] = scenario_dict

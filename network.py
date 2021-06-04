@@ -1,6 +1,6 @@
 # Inter-project modules
 import nodes
-from const import PuddingType, THRESHOLD
+from const import PuddingType
 
 # Python modules / libraries
 import os
@@ -11,11 +11,15 @@ from itertools import combinations
 key_pairs = list()
 temp_key_pairs = list()
 
+user_names = ['Alice', 'Bob']
+
 
 class Network:
-    def __init__(self, pudding_type, num_discovery_nodes=2, num_relay_nodes=0, num_users=0):
+    def __init__(self, pudding_type, num_discovery_nodes=5, threshold=3, num_relay_nodes=0, num_users=0):
         self.discovery_nodes = list()
+        self.threshold = threshold
         self.relay_nodes = list()
+        self.n = num_discovery_nodes
         self.public_address_book = dict()
         self.public_address_book = self.initiate_network(
             num_discovery_nodes, num_relay_nodes, num_users)
@@ -77,7 +81,7 @@ class Network:
             pickle.dump(key_pairs, file)
 
         self.discovery_node_combinations = [list(l) for l in list(combinations(
-            self.discovery_nodes, THRESHOLD))]
+            self.discovery_nodes, self.threshold))]
         for comb in self.discovery_node_combinations:
             comb.sort(key=lambda x: x.id)
 
