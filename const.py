@@ -5,6 +5,7 @@ from collections import namedtuple
 
 THRESHOLD = 3
 PATH_LENGTH = 3
+N = 5
 
 # User record data type for discovery nodes
 RegistrationData = namedtuple('RegistrationData', 'secret_piece, svk')

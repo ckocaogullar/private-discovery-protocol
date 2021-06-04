@@ -9,7 +9,7 @@ from Crypto.PublicKey import RSA
 from Crypto.Random import get_random_bytes
 from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.Signature import pkcs1_15
-from Crypto.Hash import SHA384
+from Crypto.Hash import SHA256
 
 
 # RSA + AES Hybrid Encryption
@@ -57,6 +57,7 @@ def generate_key_pair():
 # Shamir's Secret Sharing
 sss = sssa()
 
+
 def divide_secret(secret, k, n):
     return sss.create(k, n, secret)
 
@@ -68,20 +69,26 @@ def combine_secret(secret_pieces):
 # Digital Signature
 
 def sign(key, msg):
-    signer = pkcs1_15.new(key)
-    hash = SHA384.new()
-    hash.update(msg)
-    return signer.sign(hash), msg
+    signer = pkcs1_15.new(RSA.import_key(key))
+    msg = bytes(msg, encoding='utf-8')
+    hash = SHA256.new(msg)
+    return signer.sign(hash)
 
 
 def verify(key, signature, msg):
-    verifier = pkcs1_15.new(key)
-    hash = SHA384.new()
-    hash.update(msg)
-    return verifier.verify(hash, signature)
-
+    try:
+        verifier = pkcs1_15.new(RSA.import_key(key))
+        msg = bytes(msg, encoding='utf-8')
+        hash = SHA256.new(msg)
+        verifier.verify(hash, signature)
+        print('Signature is valid')
+        return True
+    except (ValueError, TypeError):
+        print('Signature is not valid')
+        return False
 
 # OPRF-related
+
 
 def hash_with_salts(salts, string):
     string = bytes(string, encoding='utf-8')
