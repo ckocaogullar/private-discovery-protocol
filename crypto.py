@@ -1,3 +1,8 @@
+# Python modules
+import random
+import math
+
+# External libraries / modules
 from SSSA import sssa
 from Crypto.PublicKey import RSA
 from Crypto.Random import get_random_bytes
@@ -5,10 +10,8 @@ from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.Signature import pkcs1_15
 from Crypto.Hash import SHA384
 
-sss = sssa()
 
 # RSA + AES Hybrid Encryption
-
 
 def encrypt(data, recipient_key):
     session_key = get_random_bytes(16)
@@ -51,6 +54,8 @@ def generate_key_pair():
 
 
 # Shamir's Secret Sharing
+sss = sssa()
+
 
 def divide_secret(secret, k, n):
     return sss.create(k, n, secret)
@@ -59,8 +64,8 @@ def divide_secret(secret, k, n):
 def combine_secret(secret_pieces):
     return sss.combine(secret_pieces)
 
-# Digital Signature
 
+# Digital Signature
 
 def sign(key, msg):
     signer = pkcs1_15.new(key)
@@ -74,3 +79,28 @@ def verify(key, signature, msg):
     hash = SHA384.new()
     hash.update(msg)
     return verifier.verify(hash, signature)
+
+
+# OPRF-related
+
+def hash_with_salts(salts, string):
+    string = bytes(string, encoding='utf-8')
+    for salt in salts:
+        hashed_str = hashlib.new('sha256', string)
+        string += bytes(salt, encoding='utf-8')
+    return hashed_str.hexdigest()
+
+
+def oprf(key_holder, input):
+    """
+    Dummy function for now, does not really run an OPRF protocol or have any cryptographic base.
+    Seeds the python random function with the searchee (searched user) ID and a secret value of the discovery server
+    This allows users to get the same pseudorandom salt value for the same user ID from the same discovery server 
+    without learning the discovery server's secret salt. However, in this dummy implementation, the discovery server
+    learns the searchee ID. 
+
+    OPRF will be used to allow the searchers to obtain fixed pseudorandom salt values for each searchee, without revealing
+    the searchee ID or learning the server's secret salt.
+    """
+    random.seed(input + key_holder.oprf_key)
+    return str(random.randint(math.pow(2, 8), math.pow(2, 16)))
