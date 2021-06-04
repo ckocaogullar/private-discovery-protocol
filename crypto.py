@@ -1,6 +1,7 @@
 # Python modules
 import random
 import math
+import hashlib
 
 # External libraries / modules
 from SSSA import sssa
@@ -55,7 +56,6 @@ def generate_key_pair():
 
 # Shamir's Secret Sharing
 sss = sssa()
-
 
 def divide_secret(secret, k, n):
     return sss.create(k, n, secret)

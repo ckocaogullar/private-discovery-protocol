@@ -40,15 +40,17 @@ class Node:
     def pass_message(self, message):
         if len(message.header) != 0:
             next_hop = message.header.pop()
-            if next_hop in self.address_book.keys():
-                print(
-                    f'Message is in {self.id}, next stop is {self.address_book[next_hop].id}.')
-                self.address_book[next_hop].process_message(message)
-                self.address_book[next_hop].pass_message(message)
-            else:
-                self.address_book.keys()
-                print(
-                    f'{self.id} does not know node {next_hop}, dropping the message.')
+            for key in self.address_book.keys():
+                if next_hop in key:
+                    print(
+                        f'Message is in {self.id}, next stop is {self.address_book[key].id}.')
+                    self.address_book[key].process_message(message)
+                    self.address_book[key].pass_message(message)
+                    return
+
+            self.address_book.keys()
+            print(
+                f'{self.id} does not know node {next_hop}, dropping the message.')
 
     def process_message(self, message):
         # Need this declaration for overloading
@@ -86,6 +88,7 @@ class User(Node):
         # Digital signature public verification key (svk), private signing key pair (ssk)
         self.svk, self.ssk = crypto.generate_key_pair()
 
+        self.handles = self.id + ' '
         self.secret = None
         self.assign_key_pair()
 
@@ -113,7 +116,7 @@ class User(Node):
         if self.network.pudding_type == PuddingType.ID_VERIFIED:
             if self.request_registration():
 
-                # Make yourself known to discovery nodes
+                # Make yourself known to relay nodes
                 for relay_node in self.network.relay_nodes:
                     relay_node.update_address_book(self.id, self)
 
@@ -140,10 +143,11 @@ class User(Node):
             Prepare salted hashes for each discovery server.
 
             Each discovery server D receives (THRESHOLD-1)-combination-of-all-discovery-servers-many hash values per user.
-            These hashes are used as keys to find the user's secret piece stored in that discovery server. 
+            These hashes are used as keys to find the user's secret piece stored in that discovery server.
             Each of these hashes use salts of one THRESHOLD-combination-of-all-discovery-servers that include D.
             """
             for discovery_node in self.network.discovery_nodes:
+                registration_message = ''
                 combinations_with_discovery_node = [
                     x for x in self.network.discovery_node_combinations if discovery_node in x]
                 assert len([x for x in combinations_with_discovery_node if discovery_node not in x]
@@ -155,9 +159,11 @@ class User(Node):
                 for comb in combinations_with_discovery_node:
                     print(
                         f'Registering to node {discovery_node.id} with combination {[x.id for x in comb]} and salts {[salt_dict[d] for d in comb]}')
-                    multi_salted_hash = crypto.hash_with_salts(
+                    handle = crypto.hash_with_salts(
                         [salt_dict[d] for d in comb], self.id)
-                    registration_message += ', ' + multi_salted_hash
+                    registration_message += handle + ' '
+                    if handle not in self.handles:
+                        self.handles += handle + ' '
                 registration_message += ', ' + secret_pieces.pop() + ', ' + str(self.svk)
                 encrypted_registration_msg = crypto.encrypt(
                     registration_message, discovery_node.pubkey)[0]
@@ -165,6 +171,10 @@ class User(Node):
                 message = self.prepare_message(
                     discovery_node, payload, 'REGISTRATION')
                 self.pass_message(message)
+
+            # Make yourself known to relay nodes
+            for relay_node in self.network.relay_nodes:
+                relay_node.update_address_book(self.handles, self)
 
     def lookup_user(self, user_id):
         print('\n---------------------------------------------')
@@ -213,7 +223,6 @@ class User(Node):
                     f'Searcher with ID {sender} and location {sender_loc} authenticated by searchee {self.id}')
                 self.address_book[sender] = (sender_pubkey, sender_loc)
         else:
-            print(message.payload)
             print(
                 f'Received a regular message with payload {crypto.decrypt(message.payload, self.privkey)[0]}')
 
@@ -247,7 +256,8 @@ class User(Node):
                 secrets).split(' --USER_LOC-- ')
             searchee_pubkey = combined_secret[0].strip()
             searchee_loc = combined_secret[1].strip()
-            print(f'\n{self.id} completed their lookup for {searchee_id}. Adding to the address book as public key: {searchee_pubkey} and location {searchee_loc}')
+            print(
+                f'\n{self.id} completed their lookup for {searchee_id}. Adding to the address book.')
             self.address_book[searchee_id] = (searchee_pubkey, searchee_loc)
             print('\n---------------------------------------------')
             print('--------------LOOKUP COMPLETED----------------')
@@ -296,15 +306,13 @@ class DiscoveryNode(Node):
         decrypted_payload, session_key = crypto.decrypt(
             message.payload, self.privkey)
 
-        print(f'decrypted_payload {decrypted_payload}')
-
         # If Pudding type is ID-Verified, user_registry_key is the User ID. If it is Incognito, it is a set of salted hashes
         user_registry_key, secret_piece, svk = [x.strip()
                                                 for x in decrypted_payload.split(',')]
-        user_registry_key = ' '.join([str(hash)
-                                      for hash in list(set(user_registry_key))]) if self.network.pudding_type == PuddingType.INCOGNITO else user_registry_key
+        # user_registry_key = ' '.join([str(hash)
+        #                              for hash in list(set(user_registry_key))]) if self.network.pudding_type == PuddingType.INCOGNITO else user_registry_key
         print(
-            f'Discovery node {self.id} registering user {user_registry_key}\n')
+            f'Discovery node {self.id} registering user with ID / handles {user_registry_key} with secret piece {secret_piece}\n')
         user_entry = UserEntry(secret_piece, svk)
 
         self.user_registry[user_registry_key] = user_entry
@@ -315,30 +323,29 @@ class DiscoveryNode(Node):
             message.payload, self.privkey)
 
         # If Pudding type is ID-Verified, user_registry_key is the User ID. If it is Incognito, it is a salted hash
-        user_registry_key = decrypted_payload.strip()
+        asked_key = decrypted_payload.strip()
+        user_registry_key = asked_key
         user_found = False
         if self.network.pudding_type == PuddingType.ID_VERIFIED:
-            user_found = user_registry_key in self.user_registry.keys()
+            user_found = asked_key in self.user_registry.keys()
 
         elif self.network.pudding_type == PuddingType.INCOGNITO:
             for hashes in self.user_registry.keys():
-                if user_registry_key in hashes:
-                    ciphertext, nonce = crypto.aes_encrypt(
-                        user_registry_key + ' ' + self.user_registry[hashes], session_key)
-                    message.payload.insert(0, [ciphertext[0], nonce])
+                if asked_key in hashes:
                     user_found = True
+                    user_registry_key = hashes
                     break
 
         if user_found:
             print(
                 f'\nDiscovery node {self.id} found user with ID / handle {user_registry_key} in its user registry\n')
-            ciphertext, nonce = crypto.aes_encrypt(user_registry_key + ' ' +
+            ciphertext, nonce = crypto.aes_encrypt(asked_key + ' ' +
                                                    self.user_registry[user_registry_key].secret_piece, session_key)
 
         else:
             print(
-                f'\nUser with ID {user_id} does not exist in discovery node {self.id}. Responding with error code {ErrorCodes.NO_USER_RECORD.name}.\n')
-            ciphertext, nonce = crypto.aes_encrypt(user_id + ' ' +
+                f'\nUser with ID/handle {user_registry_key} does not exist in discovery node {self.id}. Responding with error code {ErrorCodes.NO_USER_RECORD.name}.\n')
+            ciphertext, nonce = crypto.aes_encrypt(user_registry_key + ' ' +
                                                    ErrorCodes.NO_USER_RECORD.name, session_key)
 
         message.payload = [self.id, ciphertext[0], nonce]

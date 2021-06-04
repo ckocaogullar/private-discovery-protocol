@@ -1,11 +1,15 @@
 # Inter-project modules
 import nodes
-from const import PuddingType
+from const import PuddingType, THRESHOLD
 
 # Python modules / libraries
 import os
 import pickle
 import inspect
+from itertools import combinations
+
+key_pairs = list()
+temp_key_pairs = list()
 
 
 class Network:
@@ -19,6 +23,8 @@ class Network:
         self.pudding_type = pudding_type
 
     def initiate_network(self, num_discovery_nodes, num_relay_nodes, num_users):
+        global key_pairs
+        global temp_key_pairs
         print('\n---------------------------------------------')
         print('------------INITIATING NETWORK---------------')
         print('---------------------------------------------\n')
@@ -26,14 +32,14 @@ class Network:
         Saving public - private key pairs to a list to pickle later.
         Key generation takes a lot of time. Reusing pre-generated key pairs speeds up the simulation significantly (by seconds)
         """
-        key_pairs = list()
+
         saved_keys_flag = False
         if os.path.isfile('network_data'):
             with open('network_data', 'rb') as file:
                 try:
                     key_pairs = pickle.load(file)
+                    temp_key_pairs = key_pairs.copy()
                     saved_keys_flag = True
-                    print(key_pairs)
                 except Exception:
                     # Something has gone wrong, do not load the pickle
                     print('Something has gone wrong')
@@ -43,21 +49,21 @@ class Network:
 
         for _ in range(num_discovery_nodes):
             node = nodes.DiscoveryNode(self)
-            self.assign_key_pair(node, saved_keys_flag, key_pairs)
+            self.assign_key_pair(node, saved_keys_flag)
             print(f'Discovery node created with ID {node.id}')
             self.discovery_nodes.append(node)
             public_address_book[node.id] = node
 
         for _ in range(num_relay_nodes):
             node = nodes.Node(self)
-            self.assign_key_pair(node, saved_keys_flag, key_pairs)
+            self.assign_key_pair(node, saved_keys_flag)
             self.relay_nodes.append(node)
             print(f'Relay node created with ID {node.id}')
             public_address_book[node.id] = node
 
         for _ in range(num_users):
             node = nodes.User(self)
-            self.assign_key_pair(node, saved_keys_flag, key_pairs)
+            self.assign_key_pair(node, saved_keys_flag)
             print(f'User created with ID {node.id}')
 
         for node in self.discovery_nodes:
@@ -69,22 +75,23 @@ class Network:
         with open('network_data', 'wb') as file:
             pickle.dump(key_pairs, file)
 
+        self.discovery_node_combinations = [list(l) for l in list(combinations(
+            self.discovery_nodes, THRESHOLD))]
+        for comb in self.discovery_node_combinations:
+            comb.sort(key=lambda x: x.id)
+        print(
+            f'discovery_node_combinations {self.discovery_node_combinations}')
+
         print('\n---------------------------------------------')
         print('-------------NETWORK INITIATED---------------')
         print('---------------------------------------------\n')
         return public_address_book
 
-    def save_public_address_book(public_address_book):
-        dict()
-        for node in public_address_book():
-            for i in inspect.getmembers(node):
-                if not i[0].startswith('_'):
-                    if not inspect.ismethod(i[1]):
-                        print(i)
-
-    def assign_key_pair(self, node, saved_keys_flag, key_pairs):
-        if saved_keys_flag and len(key_pairs):
-            key_pair = key_pairs.pop()
+    def assign_key_pair(self, node, saved_keys_flag):
+        global key_pairs
+        global temp_key_pairs
+        if saved_keys_flag and len(temp_key_pairs):
+            key_pair = temp_key_pairs.pop()
             node.assign_key_pair(key_pair)
         else:
             key_pair = node.assign_key_pair()
