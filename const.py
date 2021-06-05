@@ -3,9 +3,10 @@
 import enum
 from collections import namedtuple
 
-THRESHOLD = 3
+THRESHOLD = 5
 PATH_LENGTH = 3
 N = 5
+FINISH_TIME = 3
 
 # Timeout values
 REGISTRATION_TIMEOUT = 10

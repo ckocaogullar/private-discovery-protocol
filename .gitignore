@@ -129,3 +129,5 @@ dmypy.json
 .pyre/
 
 network_data
+
+scenario_combos
