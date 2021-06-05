@@ -18,6 +18,7 @@ class Network:
         self.discovery_nodes = list()
         self.threshold = threshold
         self.relay_nodes = list()
+        self.users = list()
         self.n = num_discovery_nodes
         self.spare_key_pairs = list()
         self.public_address_book = dict()
@@ -67,8 +68,10 @@ class Network:
             public_address_book[node.id] = node
 
         for _ in range(num_users):
-            node = nodes.User(self)
+            node = nodes.User(
+                self, 'Alice', temp_key_pairs.pop(), temp_key_pairs.pop())
             self.assign_key_pair(node, saved_keys_flag)
+
             print(f'User created with ID {node.id}')
 
         for node in self.discovery_nodes:
@@ -106,4 +109,7 @@ class Network:
 
     def increment_tick(self):
         self.tick += 1
+        for user in self.users:
+            if user.check_timeout():
+                return True
         return self.tick

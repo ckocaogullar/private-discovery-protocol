@@ -11,11 +11,13 @@ import string
 
 # Inter-project modules
 from .network import Network
-from .const import PATH_LENGTH,  UserEntry, RegistrationData, ErrorCodes, MessageType, PuddingType
+from .const import PATH_LENGTH, TIMEOUT,  UserEntry, RegistrationData, ErrorCodes, MessageType, PuddingType
 from . import crypto
 import math
 
 from Crypto.Util import number
+
+from src import network
 
 """
 Representing time with an event-driven tick-based approach
@@ -55,7 +57,6 @@ class Node:
                 result = self.address_book[key].process_message(message)
                 print(f'result in pass message is {result}')
                 if result != None:
-                    print('returning result')
                     return result
                 if len(message.header) != 0:
                     self.address_book[key].pass_message(
@@ -64,7 +65,9 @@ class Node:
         if not next_hop_found:
             print(
                 f'{self.id} does not know node {next_hop}, dropping the message.')
-            self.network.increment_tick()
+            tick_res = self.network.increment_tick()
+            if type(tick_res) is type(bool):
+                return ErrorCodes.TIMEOUT
 
     def process_message(self, message):
         # Need this declaration for overloading
@@ -104,12 +107,7 @@ class User(Node):
             self.assign_key_pair(args[2])
         else:
             self.assign_key_pair()
-        if len(args) == 4:
-            assert isinstance(
-                args[2], tuple), "Only tuples are allowed as user key pair."
-            self.svk, self.ssk = args[2]
-        else:
-            self.svk, self.ssk = crypto.generate_key_pair()
+
         # A buffer for received discovery responses. This list consists of elements that are tuples of type (discovery_node_id, response_message)
         self.discovery_response_buffer = list()
 
@@ -118,6 +116,8 @@ class User(Node):
         self.handles = self.id + ' '
         self.secret = None
         self.secret_pieces = None
+        self.svk, self.ssk = crypto.generate_key_pair()
+        self.network.users.append(self)
 
         print(f'User created with ID {self.id} and location {self.loc}')
 
@@ -218,7 +218,9 @@ class User(Node):
         else:
             print(
                 f'Received a regular message with payload {crypto.decrypt(message.payload, self.privkey)[0]}')
-        self.network.increment_tick()
+        tick_res = self.network.increment_tick()
+        if type(tick_res) is type(True):
+            return ErrorCodes.TIMEOUT
 
     def ping_user(self, user_id):
         payload, session_key = crypto.encrypt(
@@ -227,6 +229,13 @@ class User(Node):
 
         if len(message.header) != 0:
             self.pass_message(message, message.header.pop())
+
+    def check_timeout(self):
+        print(
+            f'Checking timeout. tick {self.network.tick} and timeout {TIMEOUT}')
+        if self.network.tick > TIMEOUT:
+            return True
+        return False
 
     def _register_id_verified(self, flag):
         if self.request_registration():
@@ -410,6 +419,9 @@ class DiscoveryNode(Node):
         Each of the data tuples is encrypted with one discovery server's pubkey.
         """
         if self.available:
+            tick_res = self.network.increment_tick()
+            if type(tick_res) is type(bool):
+                return ErrorCodes.TIMEOUT
             if message.detect_type() == 'REGISTRATION':
                 return self._register_user(message)
             elif message.detect_type() == 'DISCOVERY':
@@ -419,7 +431,6 @@ class DiscoveryNode(Node):
         else:
             print(f'Discovery node {self.id} is unavailable')
             self.pass_message(message, message.header[-1])
-        self.network.increment_tick()
 
     def _register_user(self, message):
         decrypted_payload, session_key = crypto.decrypt(
@@ -497,6 +508,7 @@ class DiscoveryNode(Node):
                                                    ErrorCodes.NO_USER_RECORD.name, session_key)
             return ErrorCodes.NO_USER_RECORD
 
+        print(f'user svk is {user_svk}')
         signature = number.long_to_bytes(int(signature))
 
         verified = crypto.verify(bytes(user_svk, encoding='utf-8'),

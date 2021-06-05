@@ -1,4 +1,5 @@
-from src import User, Network, PuddingType, N
+from src.nodes import User, Network
+from src.const import PuddingType, N
 
 
 def main():

@@ -24,6 +24,7 @@ class ErrorCodes(enum.Enum):
     INVALID_SIGNATURE = 3
     INTERNAL_ID_VERIF_FAILED = 4
     NODE_NOT_AVAILABLE = 5
+    TIMEOUT = 6
 
 
 class MessageType(enum.Enum):

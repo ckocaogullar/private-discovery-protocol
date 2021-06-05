@@ -21,7 +21,8 @@ events = []
 
 
 def main():
-    all_scenarios = dict()
+    prep_availability_scenarios()
+    """all_scenarios = dict()
 
     network_scenarios = list(
         itertools.product(pudding_types, k_values, n_values))
@@ -48,8 +49,36 @@ def main():
                 count += 1
         if count >= 200:
             break
+    """
+    all_scenarios = dict()
 
-    with open('simulator/config/test_config.json', 'w') as file:
+    network_scenarios = list(
+        itertools.product(pudding_types, k_values, n_values))
+
+    user_scenarios = prep_availability_scenarios()
+
+    count = 0
+    for user_scenario in user_scenarios:
+        if user_scenarios[user_scenario]:
+            print(user_scenario)
+
+        for network_scenario in network_scenarios:
+            if network_scenario[1] <= network_scenario[2]:
+                scenario_dict = {
+                    'pudding_type': network_scenario[0],
+                    'k': network_scenario[1],
+                    'n': network_scenario[2],
+                    'user_scenario': user_scenario,
+                    'feasible': user_scenarios[user_scenario]
+                }
+                scenario_key = '.'.join(
+                    map(str, network_scenario)) + '-' + str(list(user_scenarios.keys()).index(user_scenario))
+                all_scenarios[scenario_key] = scenario_dict
+                count += 1
+        # if count >= 200:
+        #    break
+
+    with open('simulator/config/test_avail_config.json', 'w') as file:
         json.dump(all_scenarios, file)
 
 
@@ -59,10 +88,43 @@ def prep_user_scenarios():
     duo_events = [x + ('discover',)
                   for x in itertools.permutations(users, 2)]
     events = list(solo_events) + duo_events
-    timed_events = dict()
+    scenarios = dict()
 
     if os.path.isfile('scenario_combos'):
         with open('../config/scenario_combos', 'rb') as file:
+            try:
+                scenarios = pickle.load(file)
+            except Exception:
+                # Something has gone wrong, do not load the pickle
+                print('Something has gone wrong')
+                pass
+
+    if not scenarios:
+        for i in range(len(events)):
+            for subset in itertools.permutations(events, i):
+                if len(subset) > 0:
+                    scenarios[subset] = is_feasible(subset)
+                    if is_feasible(subset):
+                        print(subset)
+                        print('Feasible')
+
+        with open('../config/scenario_combos', 'wb') as file:
+            pickle.dump(scenarios, file)
+
+    return scenarios
+
+
+def prep_availability_scenarios():
+    solo_events = itertools.product(
+        users, ['register', 'update'])
+    duo_events = [x + ('discover',)
+                  for x in [(users[0], users[1])]]
+    events = list(solo_events) + duo_events
+    print(events)
+    timed_events = dict()
+
+    if os.path.isfile('simulator/config/avail_scenario_combos'):
+        with open('simulator/config/avail_scenario_combos', 'rb') as file:
             try:
                 timed_events = pickle.load(file)
             except Exception:
@@ -71,18 +133,17 @@ def prep_user_scenarios():
                 pass
 
     if not timed_events:
-        print('New')
         for i in range(len(events)):
-            print(i)
             for subset in itertools.permutations(events, i):
                 if len(subset) > 0:
-                    timed_events[subset] = is_feasible(subset)
                     if is_feasible(subset):
+                        timed_events[subset] = True
                         print(subset)
-                        print('Feasible')
 
-        with open('../config/scenario_combos', 'wb') as file:
-            pickle.dump(timed_events, file)
+    print(timed_events)
+
+    with open('simulator/config/avail_scenario_combos', 'wb') as file:
+        pickle.dump(timed_events, file)
 
     return timed_events
 
