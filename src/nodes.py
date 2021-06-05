@@ -66,7 +66,7 @@ class Node:
             print(
                 f'{self.id} does not know node {next_hop}, dropping the message.')
             tick_res = self.network.increment_tick()
-            if type(tick_res) is type(bool):
+            if type(tick_res) is bool:
                 return ErrorCodes.TIMEOUT
 
     def process_message(self, message):
@@ -420,7 +420,7 @@ class DiscoveryNode(Node):
         """
         if self.available:
             tick_res = self.network.increment_tick()
-            if type(tick_res) is type(bool):
+            if type(tick_res) is bool:
                 return ErrorCodes.TIMEOUT
             if message.detect_type() == 'REGISTRATION':
                 return self._register_user(message)
