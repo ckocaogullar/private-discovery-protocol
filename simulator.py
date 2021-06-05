@@ -5,7 +5,7 @@ from const import PuddingType, N
 
 def main():
     network = Network(PuddingType.INCOGNITO, num_discovery_nodes=N,
-                      num_relay_nodes=0, num_users=0)
+                      num_relay_nodes=30, num_users=0)
 
     user_1 = User(network, "Alice")
     user_2 = User(network, "Bob")

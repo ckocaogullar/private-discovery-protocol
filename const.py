@@ -3,9 +3,9 @@
 import enum
 from collections import namedtuple
 
-THRESHOLD = 5
+THRESHOLD = 3
 PATH_LENGTH = 3
-N = 5
+N = 3
 FINISH_TIME = 3
 
 # Timeout values
@@ -21,7 +21,10 @@ UserEntry = namedtuple('UserEntry', 'pubkey, secret_piece, auth_flag')
 
 class ErrorCodes(enum.Enum):
     NO_USER_RECORD = 1
-    NODE_NOT_AVAILABLE = 2
+    USER_ALREADY_EXISTS = 2
+    INVALID_SIGNATURE = 3
+    INTERNAL_ID_VERIF_FAILED = 4
+    NODE_NOT_AVAILABLE = 5
 
 
 class MessageType(enum.Enum):

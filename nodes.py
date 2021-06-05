@@ -32,7 +32,7 @@ class Node:
             string.ascii_uppercase + string.digits) for _ in range(3))
 
         self.network = network
-        self.address_book = self.network.public_address_book.copy()
+        self.address_book = network.public_address_book.copy()
         self.pubkey = None
         self.privkey = None
 
@@ -40,18 +40,23 @@ class Node:
         # Public - private key pair for encrypting all communications
         if key_pair:
             self.pubkey, self.privkey = key_pair
+            return key_pair
         else:
             self.pubkey, self.privkey = crypto.generate_key_pair()
             return (self.pubkey, self.privkey)
 
     def pass_message(self, message, next_hop):
-        print(f'Message header is {message.header}')
+        # print(f'Message header is {message.header}')
         next_hop_found = False
         for key in self.address_book.keys():
             if next_hop in key:
                 print(
                     f'Message is in {self.id}, next stop is {self.address_book[key].id}.')
-                self.address_book[key].process_message(message)
+                result = self.address_book[key].process_message(message)
+                print(f'result in pass message is {result}')
+                if result != None:
+                    print('returning result')
+                    return result
                 if len(message.header) != 0:
                     self.address_book[key].pass_message(
                         message, message.header.pop())
@@ -85,25 +90,34 @@ class User(Node):
     def __init__(self, *args):
         # Input checks
         assert 0 < len(
-            args) <= 2, "User constructor can only be called with one or two parameters: Network and [(User ID) or none]."
+            args) <= 4, "User constructor can only be called with 1 - 3 parameters: Network, [(User ID) or none], [(key_pair) or none]."
         assert isinstance(
             args[0], Network), "The user must take network as the first parameter."
         super().__init__(args[0])
-        if len(args) == 2:
+        if len(args) >= 2:
             assert isinstance(
                 args[1], str), "Only strings are allowed as user IDs."
             self.id = args[1]
-
+        if len(args) == 3:
+            assert isinstance(
+                args[2], tuple), "Only tuples are allowed as user key pair."
+            self.assign_key_pair(args[2])
+        else:
+            self.assign_key_pair()
+        if len(args) == 4:
+            assert isinstance(
+                args[2], tuple), "Only tuples are allowed as user key pair."
+            self.svk, self.ssk = args[2]
+        else:
+            self.svk, self.ssk = crypto.generate_key_pair()
         # A buffer for received discovery responses. This list consists of elements that are tuples of type (discovery_node_id, response_message)
         self.discovery_response_buffer = list()
 
         # Digital signature public verification key (svk), private signing key pair (ssk)
-        self.svk, self.ssk = crypto.generate_key_pair()
 
         self.handles = self.id + ' '
         self.secret = None
         self.secret_pieces = None
-        self.assign_key_pair()
 
         print(f'User created with ID {self.id} and location {self.loc}')
 
@@ -135,9 +149,13 @@ class User(Node):
             self.secret, self.network.threshold, self.network.n)
 
         if self.network.pudding_type == PuddingType.ID_VERIFIED:
-            self._register_id_verified(flag)
+            result = self._register_id_verified(flag)
+            print(f'result in register() is {result}')
+            return result
         elif self.network.pudding_type == PuddingType.INCOGNITO:
-            self._register_incognito(flag)
+            result = self._register_incognito(flag)
+            print(f'result in register() is {result}')
+            return result
 
     def discover_user(self, user_id):
         print('\n---------------------------------------------')
@@ -167,13 +185,17 @@ class User(Node):
             message = self.prepare_message(
                 discovery_node, payload, 'DISCOVERY', anonymous=True)
             if len(message.header) != 0:
-                self.pass_message(message, message.header.pop())
+                result = self.pass_message(message, message.header.pop())
+                print(f'result in discover_user is {result}')
+                if result != None:
+                    print('returning result')
+                    return result
 
     def update_user_data(self):
         """
         Generates a new secret, signs the public key, updates it on discovery nodes.
         This is a demonstration of the authorised user data update feature.
-        This feature can be generalised to other user data. 
+        This feature can be generalised to other user data.
         """
         # User's contact information is their secret. Padding the value for secret sharing.
         secret = self.pubkey + b' --USER_LOC-- ' + \
@@ -185,7 +207,7 @@ class User(Node):
             self.secret, self.network.threshold, self.network.n)
 
         self.assign_key_pair()
-        self.register('UPDATE')
+        return self.register('UPDATE')
 
     def process_message(self, message):
         message_type = message.detect_type()
@@ -231,7 +253,11 @@ class User(Node):
                 message = self.prepare_message(
                     discovery_node, payload, flag)
                 if len(message.header) != 0:
-                    self.pass_message(message, message.header.pop())
+                    result = self.pass_message(message, message.header.pop())
+                    print(f'result in _register_id_verified is {result}')
+                    if result != None:
+                        print('returning result')
+                        return result
 
     def _register_incognito(self, flag):
         salt_dict = dict()
@@ -283,7 +309,11 @@ class User(Node):
                 discovery_node, payload, flag)
 
             if len(message.header) != 0:
-                self.pass_message(message, message.header.pop())
+                result = self.pass_message(message, message.header.pop())
+                print(f'result in _register_incognito is {result}')
+                if result != None:
+                    print('returning result')
+                    return result
 
         # Make yourself known to relay nodes
         for relay_node in self.network.relay_nodes:
@@ -381,11 +411,11 @@ class DiscoveryNode(Node):
         """
         if self.available:
             if message.detect_type() == 'REGISTRATION':
-                self._register_user(message)
+                return self._register_user(message)
             elif message.detect_type() == 'DISCOVERY':
-                self._process_discovery_request(message)
+                return self._process_discovery_request(message)
             elif message.detect_type() == 'UPDATE':
-                self._update_user_data(message)
+                return self._update_user_data(message)
         else:
             print(f'Discovery node {self.id} is unavailable')
             self.pass_message(message, message.header[-1])
@@ -399,11 +429,16 @@ class DiscoveryNode(Node):
         user_registry_key, secret_piece, svk = [x.strip()
                                                 for x in decrypted_payload.split('--SEP--')]
 
-        print(
-            f'Discovery node {self.id} registering user with ID / handles {user_registry_key} with secret piece {secret_piece}\n')
+        # print(
+        #    f'Discovery node {self.id} registering user with ID / handles {user_registry_key} with secret piece {secret_piece}\n')
+        print(f'Discovery node {self.id} registering user\n')
         user_entry = RegistrationData(secret_piece, svk)
-
-        self.user_registry[user_registry_key] = user_entry
+        if user_registry_key not in self.user_registry.keys():
+            self.user_registry[user_registry_key] = user_entry
+        else:
+            print(
+                f'\nUser entry with ID/handle {user_registry_key} already exists in discovery node {self.id}. Responding with error code {ErrorCodes.USER_ALREADY_EXISTS.name}.\n')
+            return ErrorCodes.USER_ALREADY_EXISTS
 
         if len(message.header) != 0:
             self.pass_message(message, message.header.pop())
@@ -437,6 +472,7 @@ class DiscoveryNode(Node):
                 f'\nUser with ID/handle {user_registry_key} does not exist in discovery node {self.id}. Responding with error code {ErrorCodes.NO_USER_RECORD.name}.\n')
             ciphertext, nonce = crypto.aes_encrypt(user_registry_key + ' ' +
                                                    ErrorCodes.NO_USER_RECORD.name, session_key)
+            return ErrorCodes.NO_USER_RECORD
 
         message.payload = [self.id, ciphertext[0], nonce]
 
@@ -452,7 +488,14 @@ class DiscoveryNode(Node):
                                                       for x in decrypted_payload.split('--SEP--')]
         print(
             f'Discovery node {self.id} received update request from user with ID / handle {user_registry_key}\n')
-        user_svk = self.user_registry[user_registry_key].svk
+        try:
+            user_svk = self.user_registry[user_registry_key].svk
+        except KeyError:
+            print(
+                f'\nUser with ID/handle {user_registry_key} does not exist in discovery node {self.id}. Responding with error code {ErrorCodes.NO_USER_RECORD.name}.\n')
+            ciphertext, nonce = crypto.aes_encrypt(user_registry_key + ' ' +
+                                                   ErrorCodes.NO_USER_RECORD.name, session_key)
+            return ErrorCodes.NO_USER_RECORD
 
         signature = number.long_to_bytes(int(signature))
 
@@ -460,6 +503,10 @@ class DiscoveryNode(Node):
                                  signature, secret_piece)
         if verified:
             print(f'User data is updated.')
+        else:
+            print(
+                f'Signature verification failed. Responding with error code {ErrorCodes.INVALID_SIGNATURE.name}')
+            return ErrorCodes.INVALID_SIGNATURE
         user_entry = RegistrationData(secret_piece, user_svk)
         self.user_registry[user_registry_key] = user_entry
 

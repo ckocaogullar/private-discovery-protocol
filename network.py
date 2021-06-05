@@ -20,6 +20,7 @@ class Network:
         self.threshold = threshold
         self.relay_nodes = list()
         self.n = num_discovery_nodes
+        self.spare_key_pairs = list()
         self.public_address_book = dict()
         self.public_address_book = self.initiate_network(
             num_discovery_nodes, num_relay_nodes, num_users)
@@ -77,13 +78,17 @@ class Network:
         for node in self.relay_nodes:
             node.address_book = public_address_book.copy()
 
-        with open('network_data', 'wb') as file:
-            pickle.dump(key_pairs, file)
-
         self.discovery_node_combinations = [list(l) for l in list(combinations(
             self.discovery_nodes, self.threshold))]
         for comb in self.discovery_node_combinations:
             comb.sort(key=lambda x: x.id)
+
+        self.spare_key_pairs = temp_key_pairs.copy()
+
+        # Return some spare key pairs for the controller to use if it needs to create users
+
+        with open('network_data', 'wb') as file:
+            pickle.dump(key_pairs, file)
 
         print('\n---------------------------------------------')
         print('-------------NETWORK INITIATED---------------')

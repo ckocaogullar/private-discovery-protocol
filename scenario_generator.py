@@ -21,29 +21,41 @@ events = []
 
 
 def main():
+    all_scenarios = dict()
 
-    scenario_combinations = list(
+    network_scenarios = list(
         itertools.product(pudding_types, k_values, n_values))
 
-    scenarios = dict()
-    for scenario in scenario_combinations:
-        if scenario[1] < scenario[2]:
-            scenario_dict = {
-                'pudding_type': scenario[0],
-                'k': scenario[1],
-                'n': scenario[2],
-                'users': users, }
-            scenario_key = '.'.join(map(str, scenario))
-            scenarios[scenario_key] = scenario_dict
+    user_scenarios = prep_user_scenarios()
 
-    user_scenarios()
+    count = 0
+    for user_scenario in user_scenarios:
+        if user_scenarios[user_scenario]:
+            print(user_scenario)
 
-    with open('config.json', 'w') as file:
-        json.dump(scenarios, file)
+        for network_scenario in network_scenarios:
+            if network_scenario[1] <= network_scenario[2]:
+                scenario_dict = {
+                    'pudding_type': network_scenario[0],
+                    'k': network_scenario[1],
+                    'n': network_scenario[2],
+                    'user_scenario': user_scenario,
+                    'feasible': user_scenarios[user_scenario]
+                }
+                scenario_key = '.'.join(
+                    map(str, network_scenario)) + '-' + str(list(user_scenarios.keys()).index(user_scenario))
+                all_scenarios[scenario_key] = scenario_dict
+                count += 1
+        if count >= 200:
+            break
+
+    with open('test_config.json', 'w') as file:
+        json.dump(all_scenarios, file)
 
 
-def user_scenarios():
-    solo_events = itertools.product(users, ['register', 'update'])
+def prep_user_scenarios():
+    solo_events = itertools.product(
+        users, ['register', 'register', 'update'])
     duo_events = [x + ('discover',)
                   for x in itertools.permutations(users, 2)]
     events = list(solo_events) + duo_events
@@ -59,21 +71,30 @@ def user_scenarios():
                 pass
 
     if not timed_events:
+        print('New')
         for i in range(len(events)):
+            print(i)
             for subset in itertools.permutations(events, i):
                 if len(subset) > 0:
                     timed_events[subset] = is_feasible(subset)
+                    if is_feasible(subset):
+                        print(subset)
+                        print('Feasible')
 
         with open('scenario_combos', 'wb') as file:
             pickle.dump(timed_events, file)
 
-    print(timed_events)
+    return timed_events
 
 
 def is_feasible(event):
     # print(event)
     for e in event:
-        if e[-1] != 'register':
+        if e[-1] == 'register':
+            for inst in e[:-1]:
+                if event.count((inst, 'register')) == 2:
+                    return False
+        elif e[-1] != 'register':
             for inst in e[:-1]:
                 if (inst, 'register') not in event:
                     # print('False')
