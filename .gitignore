@@ -131,3 +131,7 @@ dmypy.json
 network_data
 
 scenario_combos
+
+main.py
+
+config.json
