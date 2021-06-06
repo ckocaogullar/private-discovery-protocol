@@ -3,20 +3,20 @@ from src.const import PuddingType, N
 
 
 def main():
-    network = Network(PuddingType.INCOGNITO, num_discovery_nodes=N,
-                      num_relay_nodes=30, num_users=0)
+    time = list()
+    for n in range(1, 6):
+        for k in range(1, n):
+            network = Network(PuddingType.INCOGNITO, num_discovery_nodes=n, threshold=k,
+                              num_relay_nodes=0, num_users=0)
 
-    user_1 = User(network, "Alice")
-    user_2 = User(network, "Bob")
-
-    user_1.register()
-    # user_2.register()
-
-    # user_1.discover_user("Bob")
-    user_1.update_user_data()
-    # Alice looks up a user that does not exist in the network
-    # user_1.lookup_user("Carol")
-    print(network.tick)
+            user_1 = User(network, "Alice")
+            user_2 = User(network, "Bob")
+            user_1.register()
+            user_1.update_user_data()
+            s = 'k: ' + str(k) + ' n: ' + str(n) + \
+                ' time: ' + str(network.tick)
+            time.append(s)
+    print(time)
 
 
 if __name__ == "__main__":

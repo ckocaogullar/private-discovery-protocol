@@ -9,7 +9,7 @@ N = 3
 FINISH_TIME = 3
 
 # Timeout values
-TIMEOUT = 4
+TIMEOUT = 40
 
 # User record data type for discovery nodes
 RegistrationData = namedtuple('RegistrationData', 'secret_piece, svk')
