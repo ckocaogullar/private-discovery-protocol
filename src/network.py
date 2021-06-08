@@ -114,7 +114,7 @@ class Network:
 
     def increment_tick(self):
         self.tick += 1
-        print(f'network tick is {self.tick}')
+        print(f'\n---Network tick is {self.tick}---')
         if self.tick > self.timeout and self.action_success_failure != SuccessCodes.REGISTRATION_COMPLETE:
             print(f'User found timeout')
             self.action_success_failure = ErrorCodes.TIMEOUT
@@ -123,23 +123,26 @@ class Network:
                 if user.registration_complete_flag:
                     print('User registration complete')
                     self.action_success_failure = SuccessCodes.REGISTRATION_COMPLETE
-        if self.avail_scenarios:
-            print(f'self.avail_scenarios {self.avail_scenarios}')
-            for key in self.avail_scenarios:
-                if int(key) * 2 == self.tick:
-                    print(
-                        f'Adjusting availability of {len(self.avail_scenarios[key])} nodes {self.avail_scenarios[key]}')
-                    for i in range(len(self.avail_scenarios[key])):
-                        if self.avail_scenarios[key][i]:
-                            self.discovery_nodes[i].make_available()
-                        else:
-                            self.discovery_nodes[i].make_unavailable()
-            if self.tick == self.timeout and self.action_success_failure == None:
-                print('doing the extra bit')
-                for i in range(len(self.avail_scenarios[key])):
-                    if self.avail_scenarios[str(len(self.avail_scenarios)-1)][i]:
-                        self.discovery_nodes[i].make_available()
-                    else:
-                        self.discovery_nodes[i].make_unavailable()
+                    return self.action_success_failure
+            if self.avail_scenarios:
+                print(f'self.avail_scenarios {self.avail_scenarios}')
+                for key in self.avail_scenarios:
+                    if self.tick % 2 == 1:
+                        print(
+                            f'Adjusting availability of {len(self.avail_scenarios[key])} nodes {self.avail_scenarios[key]}')
+                        for i in range(len(self.avail_scenarios[key])):
+                            if self.avail_scenarios[key][i]:
+                                self.discovery_nodes[i].make_available()
+                            else:
+                                self.discovery_nodes[i].make_unavailable()
+                for user in self.users:
+                    user.send_message_from_buffer()
+                # if self.tick == self.timeout and self.action_success_failure == None:
+                #     print('doing the extra bit')
+                #     for i in range(len(self.avail_scenarios[key])):
+                #         if self.avail_scenarios[str(len(self.avail_scenarios)-1)][i]:
+                #             self.discovery_nodes[i].make_available()
+                #         else:
+                #             self.discovery_nodes[i].make_unavailable()
 
         return self.tick

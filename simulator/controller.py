@@ -42,6 +42,9 @@ def prot_liveness():
     for key in scenarios:
         liveness_scenario_reader(key, scenarios[key])
 
+    # liveness_scenario_reader('ID_VERIFIED.2.2-register-9',
+    #                          scenarios['ID_VERIFIED.2.2-register-9'])
+
     with open('simulator/config/test_avail_results.json', 'w') as file:
         json.dump(results, file)
 
@@ -55,7 +58,7 @@ def liveness_scenario_reader(key, scenario):
 
     network = Network(
         pudding_type, num_discovery_nodes=num_discovery_nodes, threshold=threshold, timeout=num_discovery_nodes*len(scenario['time'])*2, avail_scenarios=scenario['time'])
-
+    print('Created network')
     spare_key_pairs = network.spare_key_pairs
 
     scenario_actors = dict()
@@ -79,6 +82,7 @@ def liveness_scenario_reader(key, scenario):
             result = True
         else:
             result = None
+        print(f'Result: {result}')
         results[key] = {
             'feasible': feasible,
             'result': result
