@@ -15,6 +15,64 @@
     "time": { "0": [false] },
     "feasible": false
   },
+  "INCOGNITO.1.1-update-0": {
+    "pudding_type": "INCOGNITO",
+    "k": 1,
+    "n": 1,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": { "0": [true, true], "1": [true, true], "2": [true] },
+    "feasible": true
+  },
+  "INCOGNITO.1.1-update-1": {
+    "pudding_type": "INCOGNITO",
+    "k": 1,
+    "n": 1,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": { "0": [true, true], "1": [true, true], "2": [false] },
+    "feasible": false
+  },
+  "INCOGNITO.1.1-discover-0": {
+    "pudding_type": "INCOGNITO",
+    "k": 1,
+    "n": 1,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [true]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.1.1-discover-1": {
+    "pudding_type": "INCOGNITO",
+    "k": 1,
+    "n": 1,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [false]
+    },
+    "feasible": false
+  },
   "INCOGNITO.1.2-register-0": {
     "pudding_type": "INCOGNITO",
     "k": 1,
@@ -141,6 +199,334 @@
     "n": 2,
     "user_scenario": [["Alice", "register"]],
     "time": { "0": [false, false], "1": [false, false] },
+    "feasible": false
+  },
+  "INCOGNITO.1.2-update-0": {
+    "pudding_type": "INCOGNITO",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.1.2-update-1": {
+    "pudding_type": "INCOGNITO",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, false]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.1.2-update-2": {
+    "pudding_type": "INCOGNITO",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [false, true]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.1.2-update-3": {
+    "pudding_type": "INCOGNITO",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [false, false]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.1.2-update-4": {
+    "pudding_type": "INCOGNITO",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, false],
+      "3": [true, true]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.1.2-update-5": {
+    "pudding_type": "INCOGNITO",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, false],
+      "3": [true, false]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.1.2-update-6": {
+    "pudding_type": "INCOGNITO",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, false],
+      "3": [false, true]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.1.2-update-7": {
+    "pudding_type": "INCOGNITO",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, false],
+      "3": [false, false]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.1.2-update-8": {
+    "pudding_type": "INCOGNITO",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, true],
+      "3": [true, true]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.1.2-update-9": {
+    "pudding_type": "INCOGNITO",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, true],
+      "3": [true, false]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.1.2-update-10": {
+    "pudding_type": "INCOGNITO",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, true],
+      "3": [false, true]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.1.2-update-11": {
+    "pudding_type": "INCOGNITO",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, true],
+      "3": [false, false]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.1.2-update-12": {
+    "pudding_type": "INCOGNITO",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, false],
+      "3": [true, true]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.1.2-update-13": {
+    "pudding_type": "INCOGNITO",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, false],
+      "3": [true, false]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.1.2-update-14": {
+    "pudding_type": "INCOGNITO",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, false],
+      "3": [false, true]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.1.2-update-15": {
+    "pudding_type": "INCOGNITO",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, false],
+      "3": [false, false]
+    },
+    "feasible": false
+  },
+  "INCOGNITO.1.2-discover-0": {
+    "pudding_type": "INCOGNITO",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [true, true]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.1.2-discover-1": {
+    "pudding_type": "INCOGNITO",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [true, false]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.1.2-discover-2": {
+    "pudding_type": "INCOGNITO",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [false, true]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.1.2-discover-3": {
+    "pudding_type": "INCOGNITO",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [false, false]
+    },
     "feasible": false
   },
   "INCOGNITO.2.2-register-0": {
@@ -271,6 +657,566 @@
     "time": { "0": [false, false], "1": [false, false] },
     "feasible": false
   },
+  "INCOGNITO.2.2-update-0": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.2.2-update-1": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, false]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.2.2-update-2": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [false, true]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.2.2-update-3": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [false, false]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.2.2-update-4": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, false],
+      "3": [true, true]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.2.2-update-5": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, false],
+      "3": [true, false]
+    },
+    "feasible": false
+  },
+  "INCOGNITO.2.2-update-6": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, false],
+      "3": [false, true]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.2.2-update-7": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, false],
+      "3": [false, false]
+    },
+    "feasible": false
+  },
+  "INCOGNITO.2.2-update-8": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, true],
+      "3": [true, true]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.2.2-update-9": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, true],
+      "3": [true, false]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.2.2-update-10": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, true],
+      "3": [false, true]
+    },
+    "feasible": false
+  },
+  "INCOGNITO.2.2-update-11": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, true],
+      "3": [false, false]
+    },
+    "feasible": false
+  },
+  "INCOGNITO.2.2-update-12": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, false],
+      "3": [true, true]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.2.2-update-13": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, false],
+      "3": [true, false]
+    },
+    "feasible": false
+  },
+  "INCOGNITO.2.2-update-14": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, false],
+      "3": [false, true]
+    },
+    "feasible": false
+  },
+  "INCOGNITO.2.2-update-15": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, false],
+      "3": [false, false]
+    },
+    "feasible": false
+  },
+  "INCOGNITO.2.2-discover-0": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [true, true],
+      "5": [true, true]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.2.2-discover-1": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [true, true],
+      "5": [true, false]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.2.2-discover-2": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [true, true],
+      "5": [false, true]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.2.2-discover-3": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [true, true],
+      "5": [false, false]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.2.2-discover-4": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [true, false],
+      "5": [true, true]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.2.2-discover-5": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [true, false],
+      "5": [true, false]
+    },
+    "feasible": false
+  },
+  "INCOGNITO.2.2-discover-6": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [true, false],
+      "5": [false, true]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.2.2-discover-7": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [true, false],
+      "5": [false, false]
+    },
+    "feasible": false
+  },
+  "INCOGNITO.2.2-discover-8": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [false, true],
+      "5": [true, true]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.2.2-discover-9": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [false, true],
+      "5": [true, false]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.2.2-discover-10": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [false, true],
+      "5": [false, true]
+    },
+    "feasible": false
+  },
+  "INCOGNITO.2.2-discover-11": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [false, true],
+      "5": [false, false]
+    },
+    "feasible": false
+  },
+  "INCOGNITO.2.2-discover-12": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [false, false],
+      "5": [true, true]
+    },
+    "feasible": true
+  },
+  "INCOGNITO.2.2-discover-13": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [false, false],
+      "5": [true, false]
+    },
+    "feasible": false
+  },
+  "INCOGNITO.2.2-discover-14": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [false, false],
+      "5": [false, true]
+    },
+    "feasible": false
+  },
+  "INCOGNITO.2.2-discover-15": {
+    "pudding_type": "INCOGNITO",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [false, false],
+      "5": [false, false]
+    },
+    "feasible": false
+  },
   "ID_VERIFIED.1.1-register-0": {
     "pudding_type": "ID_VERIFIED",
     "k": 1,
@@ -285,6 +1231,64 @@
     "n": 1,
     "user_scenario": [["Alice", "register"]],
     "time": { "0": [false] },
+    "feasible": false
+  },
+  "ID_VERIFIED.1.1-update-0": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 1,
+    "n": 1,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": { "0": [true, true], "1": [true, true], "2": [true] },
+    "feasible": true
+  },
+  "ID_VERIFIED.1.1-update-1": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 1,
+    "n": 1,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": { "0": [true, true], "1": [true, true], "2": [false] },
+    "feasible": false
+  },
+  "ID_VERIFIED.1.1-discover-0": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 1,
+    "n": 1,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [true]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.1.1-discover-1": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 1,
+    "n": 1,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [false]
+    },
     "feasible": false
   },
   "ID_VERIFIED.1.2-register-0": {
@@ -415,6 +1419,334 @@
     "time": { "0": [false, false], "1": [false, false] },
     "feasible": false
   },
+  "ID_VERIFIED.1.2-update-0": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.1.2-update-1": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, false]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.1.2-update-2": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [false, true]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.1.2-update-3": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [false, false]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.1.2-update-4": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, false],
+      "3": [true, true]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.1.2-update-5": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, false],
+      "3": [true, false]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.1.2-update-6": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, false],
+      "3": [false, true]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.1.2-update-7": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, false],
+      "3": [false, false]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.1.2-update-8": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, true],
+      "3": [true, true]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.1.2-update-9": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, true],
+      "3": [true, false]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.1.2-update-10": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, true],
+      "3": [false, true]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.1.2-update-11": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, true],
+      "3": [false, false]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.1.2-update-12": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, false],
+      "3": [true, true]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.1.2-update-13": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, false],
+      "3": [true, false]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.1.2-update-14": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, false],
+      "3": [false, true]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.1.2-update-15": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, false],
+      "3": [false, false]
+    },
+    "feasible": false
+  },
+  "ID_VERIFIED.1.2-discover-0": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [true, true]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.1.2-discover-1": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [true, false]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.1.2-discover-2": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [false, true]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.1.2-discover-3": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 1,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [false, false]
+    },
+    "feasible": false
+  },
   "ID_VERIFIED.2.2-register-0": {
     "pudding_type": "ID_VERIFIED",
     "k": 2,
@@ -541,6 +1873,566 @@
     "n": 2,
     "user_scenario": [["Alice", "register"]],
     "time": { "0": [false, false], "1": [false, false] },
+    "feasible": false
+  },
+  "ID_VERIFIED.2.2-update-0": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.2.2-update-1": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, false]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.2.2-update-2": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [false, true]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.2.2-update-3": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [false, false]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.2.2-update-4": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, false],
+      "3": [true, true]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.2.2-update-5": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, false],
+      "3": [true, false]
+    },
+    "feasible": false
+  },
+  "ID_VERIFIED.2.2-update-6": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, false],
+      "3": [false, true]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.2.2-update-7": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, false],
+      "3": [false, false]
+    },
+    "feasible": false
+  },
+  "ID_VERIFIED.2.2-update-8": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, true],
+      "3": [true, true]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.2.2-update-9": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, true],
+      "3": [true, false]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.2.2-update-10": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, true],
+      "3": [false, true]
+    },
+    "feasible": false
+  },
+  "ID_VERIFIED.2.2-update-11": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, true],
+      "3": [false, false]
+    },
+    "feasible": false
+  },
+  "ID_VERIFIED.2.2-update-12": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, false],
+      "3": [true, true]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.2.2-update-13": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, false],
+      "3": [true, false]
+    },
+    "feasible": false
+  },
+  "ID_VERIFIED.2.2-update-14": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, false],
+      "3": [false, true]
+    },
+    "feasible": false
+  },
+  "ID_VERIFIED.2.2-update-15": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Alice", "update"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [false, false],
+      "3": [false, false]
+    },
+    "feasible": false
+  },
+  "ID_VERIFIED.2.2-discover-0": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [true, true],
+      "5": [true, true]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.2.2-discover-1": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [true, true],
+      "5": [true, false]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.2.2-discover-2": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [true, true],
+      "5": [false, true]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.2.2-discover-3": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [true, true],
+      "5": [false, false]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.2.2-discover-4": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [true, false],
+      "5": [true, true]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.2.2-discover-5": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [true, false],
+      "5": [true, false]
+    },
+    "feasible": false
+  },
+  "ID_VERIFIED.2.2-discover-6": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [true, false],
+      "5": [false, true]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.2.2-discover-7": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [true, false],
+      "5": [false, false]
+    },
+    "feasible": false
+  },
+  "ID_VERIFIED.2.2-discover-8": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [false, true],
+      "5": [true, true]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.2.2-discover-9": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [false, true],
+      "5": [true, false]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.2.2-discover-10": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [false, true],
+      "5": [false, true]
+    },
+    "feasible": false
+  },
+  "ID_VERIFIED.2.2-discover-11": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [false, true],
+      "5": [false, false]
+    },
+    "feasible": false
+  },
+  "ID_VERIFIED.2.2-discover-12": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [false, false],
+      "5": [true, true]
+    },
+    "feasible": true
+  },
+  "ID_VERIFIED.2.2-discover-13": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [false, false],
+      "5": [true, false]
+    },
+    "feasible": false
+  },
+  "ID_VERIFIED.2.2-discover-14": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [false, false],
+      "5": [false, true]
+    },
+    "feasible": false
+  },
+  "ID_VERIFIED.2.2-discover-15": {
+    "pudding_type": "ID_VERIFIED",
+    "k": 2,
+    "n": 2,
+    "user_scenario": [
+      ["Alice", "register"],
+      ["Bob", "register"],
+      ["Alice", "Bob", "discover"]
+    ],
+    "time": {
+      "0": [true, true],
+      "1": [true, true],
+      "2": [true, true],
+      "3": [true, true],
+      "4": [false, false],
+      "5": [false, false]
+    },
     "feasible": false
   }
 }
