@@ -1,6 +1,6 @@
 # Inter-project modules
 from . import nodes
-from .const import PuddingType
+from .const import ErrorCodes, PuddingType, SuccessCodes
 
 # Python modules / libraries
 import os
@@ -14,7 +14,7 @@ user_names = ['Alice', 'Bob']
 
 
 class Network:
-    def __init__(self, pudding_type, num_discovery_nodes=5, threshold=3, num_relay_nodes=0, num_users=0):
+    def __init__(self, pudding_type, num_discovery_nodes=5, threshold=3, num_relay_nodes=0, num_users=0, timeout=4, avail_scenarios=None, controller=None):
         self.discovery_nodes = list()
         self.threshold = threshold
         self.relay_nodes = list()
@@ -26,7 +26,12 @@ class Network:
             num_discovery_nodes, num_relay_nodes, num_users)
         assert pudding_type in PuddingType, "Invalid Pudding type. Must be one of the following: ID_VERIFIED , INCOGNITO"
         self.pudding_type = pudding_type
-        self.tick = 0
+        self.tick = -1
+        self.timeout = timeout
+        self.avail_scenarios = avail_scenarios
+        self.action_success_failure = None
+        self.controller = controller
+        self.increment_tick()
 
     def initiate_network(self, num_discovery_nodes, num_relay_nodes, num_users):
         global key_pairs
@@ -109,7 +114,32 @@ class Network:
 
     def increment_tick(self):
         self.tick += 1
-        for user in self.users:
-            if user.check_timeout():
-                return True
+        print(f'network tick is {self.tick}')
+        if self.tick > self.timeout and self.action_success_failure != SuccessCodes.REGISTRATION_COMPLETE:
+            print(f'User found timeout')
+            self.action_success_failure = ErrorCodes.TIMEOUT
+        else:
+            for user in self.users:
+                if user.registration_complete_flag:
+                    print('User registration complete')
+                    self.action_success_failure = SuccessCodes.REGISTRATION_COMPLETE
+        if self.avail_scenarios:
+            print(f'self.avail_scenarios {self.avail_scenarios}')
+            for key in self.avail_scenarios:
+                if int(key) * 2 == self.tick:
+                    print(
+                        f'Adjusting availability of {len(self.avail_scenarios[key])} nodes {self.avail_scenarios[key]}')
+                    for i in range(len(self.avail_scenarios[key])):
+                        if self.avail_scenarios[key][i]:
+                            self.discovery_nodes[i].make_available()
+                        else:
+                            self.discovery_nodes[i].make_unavailable()
+            if self.tick == self.timeout and self.action_success_failure == None:
+                print('doing the extra bit')
+                for i in range(len(self.avail_scenarios[key])):
+                    if self.avail_scenarios[str(len(self.avail_scenarios)-1)][i]:
+                        self.discovery_nodes[i].make_available()
+                    else:
+                        self.discovery_nodes[i].make_unavailable()
+
         return self.tick

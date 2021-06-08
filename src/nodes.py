@@ -11,7 +11,7 @@ import string
 
 # Inter-project modules
 from .network import Network
-from .const import PATH_LENGTH, TIMEOUT,  UserEntry, RegistrationData, ErrorCodes, MessageType, PuddingType
+from .const import PATH_LENGTH,  UserEntry, RegistrationData, ErrorCodes, SuccessCodes, MessageType, PuddingType
 from . import crypto
 import math
 
@@ -37,6 +37,7 @@ class Node:
         self.address_book = network.public_address_book.copy()
         self.pubkey = None
         self.privkey = None
+        self.message_on_hold = None
 
     def assign_key_pair(self, key_pair=None):
         # Public - private key pair for encrypting all communications
@@ -50,39 +51,49 @@ class Node:
     def pass_message(self, message, next_hop):
         # print(f'Message header is {message.header}')
         next_hop_found = False
-        for key in self.address_book.keys():
-            if next_hop in key:
+        print(f'Node {self.id} address book keys {self.address_book.keys()}')
+        if not self.message_on_hold:
+            print(f'Self message on hold with header {message.header}')
+            self.network.increment_tick()
+        else:
+            for key in self.address_book.keys():
+                if next_hop in key:
+                    print(
+                        f'Message is in {self.id}, next stop is {self.address_book[key].id}.')
+                    self.address_book[key].process_message(message)
+
+                    if len(message.header) != 0:
+                        result = self.address_book[key].pass_message(
+                            message, message.header.pop())
+
+                    next_hop_found = True
+            if not next_hop_found:
                 print(
-                    f'Message is in {self.id}, next stop is {self.address_book[key].id}.')
-                result = self.address_book[key].process_message(message)
-                print(f'result in pass message is {result}')
-                if result != None:
-                    return result
-                if len(message.header) != 0:
-                    self.address_book[key].pass_message(
-                        message, message.header.pop())
-                next_hop_found = True
-        if not next_hop_found:
-            print(
-                f'{self.id} does not know node {next_hop}, dropping the message.')
-            tick_res = self.network.increment_tick()
-            if type(tick_res) is bool:
-                return ErrorCodes.TIMEOUT
+                    f'{self.id} does not know node {next_hop}, dropping the message.')
+            # self.network.increment_tick()
 
     def process_message(self, message):
         # Need this declaration for overloading
         pass
 
-    def prepare_message(self, target, payload, type, anonymous=False):
+    def prepare_message(self, target, payload, type, anonymous=False, handle=None):
         if len(self.network.relay_nodes):
-            selected_relay_nodes = random.sample(
-                self.network.relay_nodes, k=PATH_LENGTH * 2)
+            if len(self.network.relay_nodes) >= PATH_LENGTH * 2:
+                selected_relay_nodes = random.sample(
+                    self.network.relay_nodes, k=PATH_LENGTH * 2)
+            else:
+                selected_relay_nodes = self.network.relay_nodes
         else:
             selected_relay_nodes = []
         path = [target] + selected_relay_nodes[PATH_LENGTH:]
         if anonymous:
-            path = [self.id] + selected_relay_nodes[:PATH_LENGTH] + path
+            if handle:
+                self_address = handle
+            else:
+                self_address = self.id
+            path = [self_address] + selected_relay_nodes[:PATH_LENGTH] + path
         header = [x.id if isinstance(x, Node) else x for x in path]
+        print(f'Prepared message with header {header}')
         return Message(header, payload, type)
 
     def update_address_book(self, key, node):
@@ -108,8 +119,13 @@ class User(Node):
         else:
             self.assign_key_pair()
 
+        self.registration_complete_flag = False
+
         # A buffer for received discovery responses. This list consists of elements that are tuples of type (discovery_node_id, response_message)
         self.discovery_response_buffer = list()
+
+        # A buffer for received registration responses. This list consists of elements that are tuples of type discovery_node_id
+        self.registration_response_buffer = list()
 
         # Digital signature public verification key (svk), private signing key pair (ssk)
 
@@ -150,12 +166,10 @@ class User(Node):
 
         if self.network.pudding_type == PuddingType.ID_VERIFIED:
             result = self._register_id_verified(flag)
-            print(f'result in register() is {result}')
-            return result
+            # return result
         elif self.network.pudding_type == PuddingType.INCOGNITO:
             result = self._register_incognito(flag)
-            print(f'result in register() is {result}')
-            return result
+            # return result
 
     def discover_user(self, user_id):
         print('\n---------------------------------------------')
@@ -186,10 +200,6 @@ class User(Node):
                 discovery_node, payload, 'DISCOVERY', anonymous=True)
             if len(message.header) != 0:
                 result = self.pass_message(message, message.header.pop())
-                print(f'result in discover_user is {result}')
-                if result != None:
-                    print('returning result')
-                    return result
 
     def update_user_data(self):
         """
@@ -215,12 +225,13 @@ class User(Node):
             self._process_discovery_message(message)
         elif message_type == 'PING':
             self._process_ping(message)
+        elif message_type == 'REGISTRATION':
+            return self._process_registration_response(message)
         else:
             print(
                 f'Received a regular message with payload {crypto.decrypt(message.payload, self.privkey)[0]}')
         tick_res = self.network.increment_tick()
-        if type(tick_res) is type(True):
-            return ErrorCodes.TIMEOUT
+        return tick_res
 
     def ping_user(self, user_id):
         payload, session_key = crypto.encrypt(
@@ -229,19 +240,34 @@ class User(Node):
 
         if len(message.header) != 0:
             self.pass_message(message, message.header.pop())
-
+    """
     def check_timeout(self):
         print(
-            f'Checking timeout. tick {self.network.tick} and timeout {TIMEOUT}')
-        if self.network.tick > TIMEOUT:
-            return True
+            f'Checking timeout. tick {self.network.tick} and timeout {self.network.timeout}')
+        if self.network.tick > self.network.timeout:
+            if self.registration_complete_flag:
+                return self.registration_complete_flag
+            else:
+                return ErrorCodes.TIMEOUT
         return False
+    """
+
+    def _process_registration_response(self, message):
+        print(
+            f'{self.id} received registration response from discovery node {message.payload[0]}')
+        self.discovery_response_buffer.append(message.payload[0])
+        if len(self.discovery_response_buffer) >= self.network.threshold:
+            print(f'{self.id} received registration responses from {len(self.discovery_response_buffer)} discovery nodes, registration complete.')
+            self.registration_complete_flag = SuccessCodes.REGISTRATION_COMPLETE
+            self.network.increment_tick()
 
     def _register_id_verified(self, flag):
         if self.request_registration():
             # Make yourself known to relay nodes
             for relay_node in self.network.relay_nodes:
                 relay_node.update_address_book(self.id, self)
+
+            self.network.public_address_book[self.id] = self
 
             # Register to discovery nodes
             for discovery_node in self.network.discovery_nodes.copy():
@@ -260,13 +286,9 @@ class User(Node):
                     registration_message, d_pubkey)[0]
                 payload = encrypted_registration_msg
                 message = self.prepare_message(
-                    discovery_node, payload, flag)
+                    discovery_node, payload, flag, anonymous=True)
                 if len(message.header) != 0:
                     result = self.pass_message(message, message.header.pop())
-                    print(f'result in _register_id_verified is {result}')
-                    if result != None:
-                        print('returning result')
-                        return result
 
     def _register_incognito(self, flag):
         salt_dict = dict()
@@ -301,6 +323,9 @@ class User(Node):
                 if handle not in self.handles:
                     self.handles += handle + ' '
 
+                print(f'{self.id} adding self to network with handle {handle}')
+                self.network.public_address_book[handle] = self
+
             secret_piece = self.secret_pieces.pop()
 
             if flag == 'UPDATE':
@@ -314,15 +339,19 @@ class User(Node):
             encrypted_registration_msg = crypto.encrypt(
                 registration_message, discovery_node.pubkey)[0]
             payload = encrypted_registration_msg
+            self_address = None
+            print(
+                f'Network has {(len(self.network.relay_nodes))} relay nodes')
+            if len(self.network.relay_nodes):
+                self_address = self.id
+            else:
+                self_address = handle
             message = self.prepare_message(
-                discovery_node, payload, flag)
+                discovery_node, payload, flag, anonymous=True, handle=self_address)
+            print(message.header)
 
             if len(message.header) != 0:
                 result = self.pass_message(message, message.header.pop())
-                print(f'result in _register_incognito is {result}')
-                if result != None:
-                    print('returning result')
-                    return result
 
         # Make yourself known to relay nodes
         for relay_node in self.network.relay_nodes:
@@ -414,23 +443,23 @@ class DiscoveryNode(Node):
         return True
 
     def process_message(self, message):
-        """
-        Process discovery message. Payload consists of a list of data tuples.
-        Each of the data tuples is encrypted with one discovery server's pubkey.
-        """
         if self.available:
-            tick_res = self.network.increment_tick()
-            if type(tick_res) is bool:
-                return ErrorCodes.TIMEOUT
             if message.detect_type() == 'REGISTRATION':
-                return self._register_user(message)
+                self._register_user(message)
             elif message.detect_type() == 'DISCOVERY':
-                return self._process_discovery_request(message)
+                self._process_discovery_request(message)
             elif message.detect_type() == 'UPDATE':
-                return self._update_user_data(message)
+                self._update_user_data(message)
+            # self.network.increment_tick()
         else:
-            print(f'Discovery node {self.id} is unavailable')
-            self.pass_message(message, message.header[-1])
+            print(
+                f'Discovery node {self.id} is unavailable. Network status {self.network.action_success_failure}')
+            if self.network.action_success_failure == ErrorCodes.TIMEOUT or self.network.action_success_failure == SuccessCodes.REGISTRATION_COMPLETE:
+                return
+            else:
+                print('Putting message on hold')
+                self.message_on_hold = message
+                self.pass_message(message, '--DUMMY--')
 
     def _register_user(self, message):
         decrypted_payload, session_key = crypto.decrypt(
@@ -442,10 +471,13 @@ class DiscoveryNode(Node):
 
         # print(
         #    f'Discovery node {self.id} registering user with ID / handles {user_registry_key} with secret piece {secret_piece}\n')
-        print(f'Discovery node {self.id} registering user\n')
+        print(
+            f'Discovery node {self.id} registering user with handle {user_registry_key}\n')
         user_entry = RegistrationData(secret_piece, svk)
         if user_registry_key not in self.user_registry.keys():
             self.user_registry[user_registry_key] = user_entry
+            for key in [x.strip() for x in user_registry_key.split()]:
+                self.address_book[key] = self.network.public_address_book[key]
         else:
             print(
                 f'\nUser entry with ID/handle {user_registry_key} already exists in discovery node {self.id}. Responding with error code {ErrorCodes.USER_ALREADY_EXISTS.name}.\n')
@@ -526,12 +558,17 @@ class DiscoveryNode(Node):
             self.pass_message(message, message.header.pop())
 
     def make_unavailable(self):
-        assert not self.available, 'Discovery node {self.id} is already unavailable'
+        print(f'Discovery node {self.id} is unavailable')
         self.available = False
+        self.pass_message(self.message_on_hold, '--DUMMY--')
 
     def make_available(self):
-        assert not self.available, 'Discovery node {self.id} is already available'
+        print(f'Discovery node {self.id} is available')
         self.available = True
+        if self.message_on_hold:
+            message = self.message_on_hold
+            #self.message_on_hold = None
+            self.process_message(message)
 
 
 class Message:

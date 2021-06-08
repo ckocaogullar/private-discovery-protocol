@@ -82,7 +82,7 @@ def main():
                     'pudding_type': network_scenario[0],
                     'k': network_scenario[1],
                     'n': network_scenario[2],
-                    'user_scenario': availability_scenario,
+                    'user_scenario': time_events[availability_scenario],
                     'time': availability_scenarios[availability_scenario][key],
                     'feasible': is_feasible_time(availability_scenarios[availability_scenario][key], network_scenario[1], network_scenario[2])
                 }
@@ -192,8 +192,11 @@ def is_feasible(event):
 
 def is_feasible_time(event, k, n):
     full_unavailable_count = 0
-    for key in event:
-        if not any(event[key]):
+    for i in range(n):
+        node_available_at_all = False
+        for key in event:
+            node_available_at_all = node_available_at_all or event[key][i]
+        if not node_available_at_all:
             full_unavailable_count += 1
     return full_unavailable_count <= n - k
 

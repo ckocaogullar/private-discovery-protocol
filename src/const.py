@@ -27,6 +27,10 @@ class ErrorCodes(enum.Enum):
     TIMEOUT = 6
 
 
+class SuccessCodes(enum.Enum):
+    REGISTRATION_COMPLETE = 1
+
+
 class MessageType(enum.Enum):
     REGISTRATION = 1
     DISCOVERY = 2
