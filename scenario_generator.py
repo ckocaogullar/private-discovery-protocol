@@ -11,7 +11,7 @@ import os
 k_values = [i for i in range(1, THRESHOLD+1)]
 n_values = [i for i in range(1, N+1)]
 time_instances = [i for i in range(0, FINISH_TIME)]
-users = ['Alice', 'Bob']
+users = ['Alice', 'Bob', 'Carol']
 
 # Pudding Types
 pudding_types = ['INCOGNITO', 'ID_VERIFIED']
@@ -32,6 +32,7 @@ def main():
     for user_scenario in user_scenarios:
         if user_scenarios[user_scenario]:
             print(user_scenario)
+            pass
 
         for network_scenario in network_scenarios:
             if network_scenario[1] <= network_scenario[2]:
@@ -46,10 +47,9 @@ def main():
                     map(str, network_scenario)) + '-' + str(list(user_scenarios.keys()).index(user_scenario))
                 all_scenarios[scenario_key] = scenario_dict
                 count += 1
-        if count >= 200:
-            break
 
-    with open('test_config.json', 'w') as file:
+    print(f'Number of total scenarios is {count}')
+    with open('test_config_2.json', 'w') as file:
         json.dump(all_scenarios, file)
 
 
@@ -74,6 +74,7 @@ def prep_user_scenarios():
         print('New')
         for i in range(len(events)):
             print(i)
+            #print(list(itertools.permutations(events, i)))
             for subset in itertools.permutations(events, i):
                 if len(subset) > 0:
                     timed_events[subset] = is_feasible(subset)

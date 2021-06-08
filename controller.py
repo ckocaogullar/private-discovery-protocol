@@ -8,7 +8,7 @@ results = dict()
 
 
 def main():
-    with open('test_config.json', 'rb') as file:
+    with open('test_config_2.json', 'rb') as file:
         data = file.read()
         scenarios = json.loads(data)
 
@@ -53,10 +53,11 @@ def scenario_reader(key, scenario):
         res = execute_action(actors, action)
         print(f'Result: {res}')
         result = not res
-        results[key] = {
-            'feasible': feasible,
-            'result': result
-        }
+        if feasible != result:
+            results[key] = {
+                'feasible': feasible,
+                'result': result
+            }
 
 
 def execute_action(users, action):
