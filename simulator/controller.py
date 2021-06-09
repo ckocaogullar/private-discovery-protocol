@@ -12,28 +12,6 @@ def main():
     prot_liveness()
 
 
-def prot_correctness():
-    max_tick = -1
-    with open('simulator/config/test_config.json', 'rb') as file:
-        data = file.read()
-        scenarios = json.loads(data)
-
-    count = 0
-    print(scenarios)
-    for key in scenarios:
-        # if count == 50:
-        #    break
-        scenario = scenarios[key]
-        print(scenario)
-        tick = correctness_scenario_reader(key, scenario)
-        max_tick = tick if tick > max_tick else tick
-        count += 1
-
-    print(f'Max network tick is {max_tick}')
-    with open('simulator/config/test_results.json', 'w') as file:
-        json.dump(results, file)
-
-
 def prot_liveness():
     with open('simulator/config/test_avail_config.json', 'rb') as file:
         data = file.read()
@@ -42,8 +20,9 @@ def prot_liveness():
     for key in scenarios:
         liveness_scenario_reader(key, scenarios[key])
 
-    # liveness_scenario_reader('ID_VERIFIED.2.2-register-9',
-    #                          scenarios['ID_VERIFIED.2.2-register-9'])
+    # single_scenario = "INCOGNITO.2.2-discover-12"
+    # liveness_scenario_reader(single_scenario,
+    #                          scenarios[single_scenario])
 
     with open('simulator/config/test_avail_results.json', 'w') as file:
         json.dump(results, file)
@@ -55,10 +34,12 @@ def liveness_scenario_reader(key, scenario):
     num_discovery_nodes = scenario['n']
     threshold = scenario['k']
     feasible = scenario['feasible']
+    event_type = scenario['event_type']
 
     network = Network(
-        pudding_type, num_discovery_nodes=num_discovery_nodes, threshold=threshold, timeout=num_discovery_nodes*len(scenario['time'])*2, avail_scenarios=scenario['time'])
+        pudding_type, num_discovery_nodes=num_discovery_nodes, num_relay_nodes=1, threshold=threshold, timeout=len(scenario['time'])*2 + 1, avail_scenarios=scenario['time'], tested_event_type=event_type)
     print('Created network')
+    print(f'event_type {event_type}')
     spare_key_pairs = network.spare_key_pairs
 
     scenario_actors = dict()
@@ -76,57 +57,21 @@ def liveness_scenario_reader(key, scenario):
                 scenario_actors[actor] = user
             actors.append(scenario_actors[actor])
         execute_action(actors, action)
-        if network.action_success_failure == ErrorCodes.TIMEOUT:
-            result = False
-        elif network.action_success_failure == SuccessCodes.REGISTRATION_COMPLETE:
-            result = True
-        else:
-            result = None
-        print(f'Result: {result}')
-        results[key] = {
-            'feasible': feasible,
-            'result': result
-        }
-    return network.tick
-
-
-def correctness_scenario_reader(key, scenario):
-    global results
-    pudding_type = PuddingType[scenario['pudding_type']]
-    num_discovery_nodes = scenario['n']
-    threshold = scenario['k']
-    feasible = scenario['feasible']
-
-    network = Network(
-        pudding_type, num_discovery_nodes=num_discovery_nodes, threshold=threshold, controller=self)
-
-    spare_key_pairs = network.spare_key_pairs
-
-    scenario_actors = dict()
-    for user_event in scenario['user_scenario']:
-        print(f'scenario is {user_event}')
-        action = user_event.pop()
-        actors = list()
-        for actor in user_event:
-            if actor not in scenario_actors.keys() or action == 'register':
-                try:
-                    user = User(network, actor, spare_key_pairs.pop())
-                except:
-                    print('NOT ENOUGH KEYS')
-                    user = User(network, actor)
-                scenario_actors[actor] = user
-            actors.append(scenario_actors[actor])
-        execute_action(actors, action)
-        if network.action_success_failure == ErrorCodes.TIMEOUT:
-            result = False
-        elif network.action_success_failure == SuccessCodes.REGISTRATION_COMPLETE:
-            result = True
-        else:
-            result = None
-        results[key] = {
-            'feasible': feasible,
-            'result': result
-        }
+    if network.action_success_failure == ErrorCodes.TIMEOUT:
+        result = False
+    elif network.action_success_failure == SuccessCodes.REGISTRATION_COMPLETE and event_type == 'register':
+        result = True
+    elif network.action_success_failure == SuccessCodes.UPDATE_COMPLETE and event_type == 'update':
+        result = True
+    elif network.action_success_failure == SuccessCodes.DISCOVERY_COMPLETE and event_type == 'discover':
+        result = True
+    else:
+        result = None
+    print(f'Result: {result}')
+    results[key] = {
+        'feasible': feasible,
+        'result': result
+    }
     return network.tick
 
 

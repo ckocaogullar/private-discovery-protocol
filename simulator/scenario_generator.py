@@ -58,7 +58,8 @@ def main():
                     'n': network_scenario[2],
                     'user_scenario': time_events[availability_scenario],
                     'time': availability_scenarios[availability_scenario][key],
-                    'feasible': is_feasible_time(time_events[availability_scenario][-1][-1], availability_scenarios[availability_scenario][key], network_scenario[1], network_scenario[2])
+                    'event_type': availability_scenario,
+                    'feasible': is_feasible_time(availability_scenario, availability_scenarios[availability_scenario][key], network_scenario[1], network_scenario[2])
                 }
                 scenario_key = '.'.join(
                     map(str, network_scenario)) + '-' + availability_scenario + '-' + str(list(availability_scenarios[availability_scenario].keys()).index(key))
@@ -83,7 +84,8 @@ def prep_availability_scenarios(k, n):
         node_probs = list(itertools.product(itertools.product(
             [True, False], repeat=n), repeat=total_time))
 
-        registration_time = [(True, True), (True, True)]
+        registration_time = [tuple([True] * n), tuple([True] * n)]
+
         for i in range(len(node_probs)):
             nod = node_probs[i]
             print(f'nod before modification {nod}')

@@ -57,7 +57,7 @@ class Node:
             print(f'Self message on hold with header {message.header}')
             # self.network.increment_tick()
         else:
-            for key in self.address_book.keys():
+            for key in copy.deepcopy(list(self.address_book.keys())):
                 if next_hop in key:
                     print(
                         f'Message is in {self.id}, next stop is {self.address_book[key].id}.')
@@ -121,12 +121,17 @@ class User(Node):
             self.assign_key_pair()
 
         self.registration_complete_flag = False
+        self.update_complete_flag = False
+        self.discovery_complete_flag = False
 
         # A buffer for received discovery responses. This list consists of elements that are tuples of type (discovery_node_id, response_message)
         self.discovery_response_buffer = list()
 
         # A buffer for received registration responses. This list consists of elements that are tuples of type discovery_node_id
         self.registration_response_buffer = list()
+
+        # A buffer for received update responses. This list consists of elements that are tuples of type discovery_node_id
+        self.update_response_buffer = list()
 
         # Digital signature public verification key (svk), private signing key pair (ssk)
 
@@ -143,12 +148,13 @@ class User(Node):
         try:
             message = self.message_buffer.pop(0)
             print(
-                f'{self.id} sending message from buffer. {len(self.message_buffer)} messages left in buffer')
+                f'{self.id} sending message from buffer. {len(self.message_buffer)} messages left in buffer: {[x.type for x in self.message_buffer]}')
             self.pass_message(message, message.header.pop())
-
+            print('calling increment tick here')
+            self.network.increment_tick()
         except IndexError:
             print(f'No messages left in user {self.id}`s message buffer.')
-        self.network.increment_tick()
+            return 'empty'
 
     def request_registration(self):
         # Send registration request to a randomly selected discovery server
@@ -190,30 +196,51 @@ class User(Node):
         print('---------------------------------------------\n')
         print(
             f'Searcher with ID {self.id} is discovering searchee with ID {user_id}')
-        selected_discovery_nodes = random.sample(
-            self.network.discovery_nodes, k=self.network.threshold)
+        selected_discovery_nodes = copy.deepcopy(self.network.discovery_nodes)
         self.sym_keys = dict()
-
+        salts = dict()
+        salted_hashes = dict()
         if self.network.pudding_type == PuddingType.ID_VERIFIED:
             discovery_message = user_id
+            for discovery_node in selected_discovery_nodes:
+                encrypted_discovery_msg, session_key = crypto.encrypt(
+                    discovery_message, discovery_node.pubkey)
+                nonce = encrypted_discovery_msg[1]
+                self.sym_keys[discovery_node.id] = (session_key, nonce)
+                payload = encrypted_discovery_msg
+                message = self.prepare_message(
+                    discovery_node, payload, 'DISCOVERY', anonymous=True)
+                self.message_buffer.append(message)
         elif self.network.pudding_type == PuddingType.INCOGNITO:
             selected_discovery_nodes.sort(key=lambda x: x.id)
-            salts = [crypto.oprf(n, user_id) for n in selected_discovery_nodes]
-            print(
-                f'Searcher picked nodes {[x.id for x in selected_discovery_nodes]} their salts are: {salts}')
-            discovery_message = crypto.hash_with_salts(salts, user_id)
+            for discovery_node in selected_discovery_nodes:
+                salts[discovery_node.id] = crypto.oprf(discovery_node, user_id)
+            for discovery_node in selected_discovery_nodes:
+                print(f'salts {salts}')
+                salts_without_node = copy.deepcopy(
+                    salts)
+                if len(salts_without_node) > 0:
+                    salts_without_node.pop(discovery_node.id)
+                    k_random_salts = random.sample(
+                        list(salts_without_node.keys()), self.network.threshold - 1)
+                    k_random_salts.append(discovery_node.id)
+                    k_random_salts.sort()
+                    salts_for_hashing = [salts[x] for x in k_random_salts]
+                else:
+                    salts_for_hashing = [salts[discovery_node.id]]
+                print(f'salts_without_node {salts_without_node}')
+                salted_hashes[discovery_node.id] = crypto.hash_with_salts(
+                    salts_for_hashing, user_id)
+                encrypted_discovery_msg, session_key = crypto.encrypt(
+                    salted_hashes[discovery_node.id], discovery_node.pubkey)
+                nonce = encrypted_discovery_msg[1]
+                self.sym_keys[discovery_node.id] = (session_key, nonce)
+                payload = encrypted_discovery_msg
+                message = self.prepare_message(
+                    discovery_node, payload, 'DISCOVERY', anonymous=True)
+                self.message_buffer.append(message)
 
-        for discovery_node in selected_discovery_nodes:
-            encrypted_discovery_msg, session_key = crypto.encrypt(
-                discovery_message, discovery_node.pubkey)
-            nonce = encrypted_discovery_msg[1]
-            self.sym_keys[discovery_node.id] = (session_key, nonce)
-            payload = encrypted_discovery_msg
-            message = self.prepare_message(
-                discovery_node, payload, 'DISCOVERY', anonymous=True)
-            self.message_buffer.append(message)
-            # if len(message.header) != 0:
-            #    result = self.pass_message(message, message.header.pop())
+        self.network.increment_tick()
 
     def update_user_data(self):
         """
@@ -241,6 +268,8 @@ class User(Node):
             self._process_ping(message)
         elif message_type == 'REGISTRATION':
             self._process_registration_response(message)
+        elif message_type == 'UPDATE':
+            self._process_update_response(message)
         else:
             print(
                 f'Received a regular message with payload {crypto.decrypt(message.payload, self.privkey)[0]}')
@@ -251,25 +280,22 @@ class User(Node):
         message = self.prepare_message(user_id, payload, 'PING')
         self.message_buffer.append(message)
 
-    """
-    def check_timeout(self):
-        print(
-            f'Checking timeout. tick {self.network.tick} and timeout {self.network.timeout}')
-        if self.network.tick > self.network.timeout:
-            if self.registration_complete_flag:
-                return self.registration_complete_flag
-            else:
-                return ErrorCodes.TIMEOUT
-        return False
-    """
-
     def _process_registration_response(self, message):
         print(
-            f'{self.id} received registration response from discovery node {message.payload[0]}')
-        self.discovery_response_buffer.append(message.payload[0])
-        if len(self.discovery_response_buffer) >= self.network.threshold:
-            print(f'{self.id} received registration responses from {len(self.discovery_response_buffer)} discovery nodes, registration complete.')
+            f'{self.id} received registration response')
+        self.registration_response_buffer.append(message.payload[0])
+        print(f'götütütütütü {len(self.registration_response_buffer)}')
+        if (len(self.registration_response_buffer) >= self.network.n and self.network.tested_event_type != 'register') or (len(self.registration_response_buffer) >= self.network.threshold and self.network.tested_event_type == 'register'):
+            print(f'{self.id} received registration responses from {len(self.registration_response_buffer)} discovery nodes, registration complete.')
             self.registration_complete_flag = SuccessCodes.REGISTRATION_COMPLETE
+
+    def _process_update_response(self, message):
+        print(
+            f'{self.id} received update response')
+        self.update_response_buffer.append(message.payload[0])
+        if len(self.update_response_buffer) >= self.network.threshold:
+            print(f'{self.id} received update responses from {len(self.update_response_buffer)} discovery nodes, update complete.')
+            self.update_complete_flag = SuccessCodes.UPDATE_COMPLETE
 
     def _register_id_verified(self, flag):
         if self.request_registration():
@@ -325,7 +351,8 @@ class User(Node):
             assert int(math.factorial(len(self.network.discovery_nodes) - 1) / (math.factorial(self.network.threshold - 1) * math.factorial(
                 len(self.network.discovery_nodes) - self.network.threshold))) == len(combinations_with_discovery_node), "Number of picked combinations is off"
             print(f'{self.id} registering to discovery node {discovery_node.id}')
-
+            print(
+                f'combinations_with_discovery_node {combinations_with_discovery_node}')
             for comb in combinations_with_discovery_node:
                 print(
                     f'{self.id} registering to node {discovery_node.id} with combination {[x.id for x in comb]} and salts {[salt_dict[d] for d in comb]}')
@@ -374,10 +401,14 @@ class User(Node):
 
     def _process_discovery_message(self, message):
         print(
-            f'{self.id} received discovery response from discovery node {message.payload[0]}')
-        self.discovery_response_buffer.append(
-            (message.payload[0], (message.payload[1], message.payload[2])))
+            f'{self.id} received discovery response')
+        try:
+            self.discovery_response_buffer.append(
+                (message.payload[0], (message.payload[1], message.payload[2])))
+        except:
+            print('The discovery response is an error. Not adding to the buffer')
         if len(self.discovery_response_buffer) >= self.network.threshold:
+            print(f'self.network.threshold {self.network.threshold}')
             print(f'{self.id} received discovery responses from all {len(self.discovery_response_buffer)} discovery nodes, processing received information.')
             self._complete_discovery()
 
@@ -397,40 +428,39 @@ class User(Node):
 
     def _complete_discovery(self):
         secrets = []
-        user_found_flag = True
         for response in self.discovery_response_buffer:
+            if ErrorCodes.NO_USER_RECORD in response:
+                print(f'{self.id} received error code {response.payload}')
+                self.discovery_complete_flag = ErrorCodes.NO_USER_RECORD
+                print(f'User could not be discovered.')
+                print('\n---------------------------------------------')
+                print('--------------DISCOVERY FAILED----------------')
+                print('---------------------------------------------\n')
+                return ErrorCodes.NO_USER_RECORD
             discovery_node_id = response[0]
             ciphertext, nonce = response[1][0], response[1][1]
             decrypted_message = [x.strip() for x in crypto.aes_decrypt(
                 self.sym_keys[discovery_node_id][0], ciphertext, nonce).split()]
-            if decrypted_message[1] in set(item. name for item in ErrorCodes):
-                print(f'{self.id} received error code {decrypted_message[1]}')
-                user_found_flag = False
-                break
-            else:
-                secrets.append(decrypted_message[1])
+            secrets.append(decrypted_message[1])
         searchee_id = decrypted_message[0]
-        if user_found_flag:
-            combined_secret = crypto.combine_secret(
-                secrets).split(' --USER_LOC-- ')
-            searchee_pubkey = combined_secret[0].strip()
-            searchee_loc = combined_secret[1].strip()
-            print(
-                f'\n{self.id} completed their discovery for {searchee_id}. Adding to the address book.')
-            new_user = not searchee_id in self.address_book.keys()
-            self.address_book[searchee_id] = UserEntry(
-                searchee_pubkey, searchee_loc, True)
-            print('\n---------------------------------------------')
-            print('--------------DISCOVERY COMPLETED----------------')
-            print('---------------------------------------------\n')
-            if new_user:
-                print(f'{self.id} pinging {searchee_id}')
-                self.ping_user(searchee_id)
-        else:
-            print(f'User {searchee_id} could not be discovered.')
-            print('\n---------------------------------------------')
-            print('--------------DISCOVERY FAILED----------------')
-            print('---------------------------------------------\n')
+
+        combined_secret = crypto.combine_secret(
+            secrets).split(' --USER_LOC-- ')
+        searchee_pubkey = combined_secret[0].strip()
+        searchee_loc = combined_secret[1].strip()
+        print(
+            f'\n{self.id} completed their discovery for {searchee_id}. Adding to the address book.')
+        new_user = not searchee_id in self.address_book.keys()
+        self.address_book[searchee_id] = UserEntry(
+            searchee_pubkey, searchee_loc, True)
+        self.discovery_complete_flag = True
+        print('\n---------------------------------------------')
+        print('--------------DISCOVERY COMPLETED----------------')
+        print('---------------------------------------------\n')
+        if new_user:
+            print(f'{self.id} pinging {searchee_id}')
+
+            # self.ping_user(searchee_id)
 
 
 class DiscoveryNode(Node):
@@ -467,7 +497,7 @@ class DiscoveryNode(Node):
         else:
             print(
                 f'Discovery node {self.id} is unavailable. Network status {self.network.action_success_failure}')
-            if self.network.action_success_failure == ErrorCodes.TIMEOUT or self.network.action_success_failure == SuccessCodes.REGISTRATION_COMPLETE:
+            if self.network.action_success_failure == ErrorCodes.TIMEOUT or self.network.is_complete_success():
                 return
             elif not self.message_on_hold:
                 print('Putting message on hold')
@@ -522,15 +552,15 @@ class DiscoveryNode(Node):
                 f'\nDiscovery node {self.id} found user with ID / handle {user_registry_key} in its user registry\n')
             ciphertext, nonce = crypto.aes_encrypt(asked_key + ' ' +
                                                    self.user_registry[user_registry_key].secret_piece, session_key)
+            message.payload = [self.id, ciphertext[0], nonce]
 
         else:
             print(
                 f'\nUser with ID/handle {user_registry_key} does not exist in discovery node {self.id}. Responding with error code {ErrorCodes.NO_USER_RECORD.name}.\n')
             ciphertext, nonce = crypto.aes_encrypt(user_registry_key + ' ' +
                                                    ErrorCodes.NO_USER_RECORD.name, session_key)
+            message.payload = ErrorCodes.NO_USER_RECORD
             return ErrorCodes.NO_USER_RECORD
-
-        message.payload = [self.id, ciphertext[0], nonce]
 
         if not self.message_on_hold:
             self.pass_message(message, message.header.pop())
@@ -553,7 +583,6 @@ class DiscoveryNode(Node):
                                                    ErrorCodes.NO_USER_RECORD.name, session_key)
             return ErrorCodes.NO_USER_RECORD
 
-        print(f'user svk is {user_svk}')
         signature = number.long_to_bytes(int(signature))
 
         verified = crypto.verify(bytes(user_svk, encoding='utf-8'),

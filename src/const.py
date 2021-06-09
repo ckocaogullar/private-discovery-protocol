@@ -25,10 +25,13 @@ class ErrorCodes(enum.Enum):
     INTERNAL_ID_VERIF_FAILED = 4
     NODE_NOT_AVAILABLE = 5
     TIMEOUT = 6
+    EMPTY_BUFFER = 8
 
 
 class SuccessCodes(enum.Enum):
     REGISTRATION_COMPLETE = 1
+    UPDATE_COMPLETE = 2
+    DISCOVERY_COMPLETE = 3
 
 
 class MessageType(enum.Enum):

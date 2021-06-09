@@ -14,7 +14,7 @@ user_names = ['Alice', 'Bob']
 
 
 class Network:
-    def __init__(self, pudding_type, num_discovery_nodes=5, threshold=3, num_relay_nodes=0, num_users=0, timeout=4, avail_scenarios=None, controller=None):
+    def __init__(self, pudding_type, num_discovery_nodes=5, threshold=3, num_relay_nodes=0, num_users=0, timeout=4, avail_scenarios=None, tested_event_type=None):
         self.discovery_nodes = list()
         self.threshold = threshold
         self.relay_nodes = list()
@@ -30,7 +30,7 @@ class Network:
         self.timeout = timeout
         self.avail_scenarios = avail_scenarios
         self.action_success_failure = None
-        self.controller = controller
+        self.tested_event_type = tested_event_type
         self.increment_tick()
 
     def initiate_network(self, num_discovery_nodes, num_relay_nodes, num_users):
@@ -114,20 +114,49 @@ class Network:
 
     def increment_tick(self):
         self.tick += 1
+        if self.tick > 30:
+            print('SHIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIT')
+            return
         print(f'\n---Network tick is {self.tick}---')
-        if self.tick > self.timeout and self.action_success_failure != SuccessCodes.REGISTRATION_COMPLETE:
+        if self.tick > self.timeout and not self.is_complete_success():
             print(f'User found timeout')
             self.action_success_failure = ErrorCodes.TIMEOUT
+        elif self.is_complete_success():
+            return
         else:
             for user in self.users:
                 if user.registration_complete_flag:
                     print('User registration complete')
-                    self.action_success_failure = SuccessCodes.REGISTRATION_COMPLETE
+                    user.registration_complete_flag = None
+                    if self.tested_event_type != 'register':
+                        print(
+                            f'self.action_success_failure {self.action_success_failure}')
+                        if self.action_success_failure != SuccessCodes.REGISTRATION_COMPLETE and self.tested_event_type == 'discover':
+                            self.action_success_failure = SuccessCodes.REGISTRATION_COMPLETE
+                            self.fast_forward('discover-1')
+                        elif self.action_success_failure == SuccessCodes.REGISTRATION_COMPLETE and self.tested_event_type == 'discover':
+                            self.action_success_failure = SuccessCodes.REGISTRATION_COMPLETE
+                            self.fast_forward('discover-2')
+                        elif self.tested_event_type == 'update':
+                            self.fast_forward('update')
+                        return self.tick
+                    else:
+                        self.action_success_failure = SuccessCodes.REGISTRATION_COMPLETE
+                    return self.action_success_failure
+                if user.update_complete_flag:
+                    print('User update complete')
+                    self.action_success_failure = SuccessCodes.UPDATE_COMPLETE
+                    user.update_complete_flag = None
+                    return self.action_success_failure
+                if user.discovery_complete_flag:
+                    print('User discovery complete')
+                    self.action_success_failure = SuccessCodes.DISCOVERY_COMPLETE
+                    user.discovery_complete_flag = None
                     return self.action_success_failure
             if self.avail_scenarios:
                 print(f'self.avail_scenarios {self.avail_scenarios}')
                 for key in self.avail_scenarios:
-                    if self.tick % 2 == 1:
+                    if self.tick == int(key) * self.n + 1:
                         print(
                             f'Adjusting availability of {len(self.avail_scenarios[key])} nodes {self.avail_scenarios[key]}')
                         for i in range(len(self.avail_scenarios[key])):
@@ -135,14 +164,43 @@ class Network:
                                 self.discovery_nodes[i].make_available()
                             else:
                                 self.discovery_nodes[i].make_unavailable()
+                empty_user_buffers = 0
                 for user in self.users:
-                    user.send_message_from_buffer()
-                # if self.tick == self.timeout and self.action_success_failure == None:
-                #     print('doing the extra bit')
-                #     for i in range(len(self.avail_scenarios[key])):
-                #         if self.avail_scenarios[str(len(self.avail_scenarios)-1)][i]:
-                #             self.discovery_nodes[i].make_available()
-                #         else:
-                #             self.discovery_nodes[i].make_unavailable()
+                    buffer_res = user.send_message_from_buffer()
+                    if buffer_res == 'empty':
+                        empty_user_buffers += 1
+                    if empty_user_buffers >= len(self.users) and not self.is_complete_success() and self.tick > 0:
+                        print('empty buffer')
+                        self.increment_tick()
+                if self.this_stage_complete():
+                    return self.tick
+                print(f'empty_user_buffers {empty_user_buffers}')
+                print(
+                    f'self.is_complete_success() {self.is_complete_success()}')
 
         return self.tick
+
+    def fast_forward(self, type):
+        if type == 'update' or type == 'discover-1':
+            self.tick = 2 * self.n
+        elif type == 'discover-2':
+            self.tick = 4 * self.n
+        print(
+            f'Fast forward to {self.tick + 1}')
+
+    def this_stage_complete(self):
+        code = self.action_success_failure
+        event_type = self.tested_event_type
+        if code == SuccessCodes.REGISTRATION_COMPLETE and event_type != 'register':
+            return True
+
+    def is_complete_success(self):
+        code = self.action_success_failure
+        event_type = self.tested_event_type
+        if code == SuccessCodes.REGISTRATION_COMPLETE and event_type == 'register':
+            return True
+        if code == SuccessCodes.UPDATE_COMPLETE and event_type == 'update':
+            return True
+        if code == SuccessCodes.DISCOVERY_COMPLETE and event_type == 'discover':
+            return True
+        return False
