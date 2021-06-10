@@ -3,7 +3,8 @@ from src.const import ErrorCodes, SuccessCodes
 from src import User, Network, PuddingType
 
 import json
-import enum
+import copy
+
 
 results = dict()
 
@@ -13,23 +14,29 @@ def main():
 
 
 def prot_liveness():
-    with open('simulator/config/test_avail_config.json', 'rb') as file:
+    with open('simulator/config/test_avail_config_new_working.json', 'rb') as file:
         data = file.read()
         scenarios = json.loads(data)
 
-    for key in scenarios:
-        liveness_scenario_reader(key, scenarios[key])
+    print(len(scenarios.keys()))
+    # with open('simulator/config/test_avail_results.json', 'w') as file:
+    #     for key in scenarios:
+    #         print('\n------------------------------------------------------------------')
+    #         print(f'Scenario name {key}')
+    #         liveness_scenario_reader(key, scenarios[key])
+    #     json.dump(results, file)
 
-    # single_scenario = "INCOGNITO.2.2-discover-12"
+    # single_scenario = "ID_VERIFIED.1.3-register-310"
     # liveness_scenario_reader(single_scenario,
     #                          scenarios[single_scenario])
 
-    with open('simulator/config/test_avail_results.json', 'w') as file:
-        json.dump(results, file)
 
+# Scenario name ID_VERIFIED.1.3-register-310
 
-def liveness_scenario_reader(key, scenario):
+def liveness_scenario_reader(key, scenario, trial_count=0):
     global results
+    num_trials = trial_count
+    scenario_copy = copy.deepcopy(scenario)
     pudding_type = PuddingType[scenario['pudding_type']]
     num_discovery_nodes = scenario['n']
     threshold = scenario['k']
@@ -37,7 +44,7 @@ def liveness_scenario_reader(key, scenario):
     event_type = scenario['event_type']
 
     network = Network(
-        pudding_type, num_discovery_nodes=num_discovery_nodes, num_relay_nodes=1, threshold=threshold, timeout=len(scenario['time'])*2 + 1, avail_scenarios=scenario['time'], tested_event_type=event_type)
+        pudding_type, num_discovery_nodes=num_discovery_nodes, num_relay_nodes=1, threshold=threshold, timeout=len(scenario['time'])*4, avail_scenarios=scenario['time'], tested_event_type=event_type)
     print('Created network')
     print(f'event_type {event_type}')
     spare_key_pairs = network.spare_key_pairs
@@ -72,7 +79,16 @@ def liveness_scenario_reader(key, scenario):
         'feasible': feasible,
         'result': result
     }
-    return network.tick
+    # Try again, max. of three times
+    if result != feasible:
+        if num_trials < 3:
+            num_trials += 1
+            print('Something unexpected happened, trying scenario again\n')
+            liveness_scenario_reader(key, scenario_copy, num_trials)
+        else:
+            assert result == feasible, 'Result and feasibility are not the same'
+    else:
+        return network.tick
 
 
 def execute_action(users, action):

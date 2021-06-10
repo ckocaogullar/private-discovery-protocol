@@ -29,13 +29,16 @@ Every tick, one of the following happens: a message is passed, or a message is p
 class Node:
     def __init__(self, network):
         # Pseudorandom strings as Node ID and location
-        self.id = ''.join(random.SystemRandom().choice(
-            string.ascii_uppercase + string.digits) for _ in range(3))
-        self.loc = ''.join(random.SystemRandom().choice(
-            string.ascii_uppercase + string.digits) for _ in range(3))
-
         self.network = network
         self.address_book = network.public_address_book.copy()
+        while True:
+            self.id = ''.join(random.SystemRandom().choice(
+                string.ascii_uppercase + string.digits) for _ in range(4))
+            if self.id not in list(self.network.public_address_book.keys()):
+                break
+        self.loc = ''.join(random.SystemRandom().choice(
+            string.ascii_uppercase + string.digits) for _ in range(4))
+
         self.pubkey = None
         self.privkey = None
         self.message_on_hold = None
