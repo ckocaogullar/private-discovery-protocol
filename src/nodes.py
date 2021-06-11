@@ -1,5 +1,5 @@
 """
-Ceren Kocaoğullar, ck596
+Anonymous Student
 University of Cambridge
 MPhil in Advanced Computer Science Project 2020-2021
 Simulation Tool for Privacy-Preserving User Discovery in Anonymous Communication Networks

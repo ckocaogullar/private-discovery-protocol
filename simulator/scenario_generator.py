@@ -1,5 +1,5 @@
 # Inter-project modules
-from src.const import THRESHOLD, N, FINISH_TIME, PuddingType
+from src.const import THRESHOLD, N, FINISH_TIME
 
 # Python modules
 import json
@@ -49,7 +49,7 @@ def main():
                 count += 1
 
     print(f'Number of total scenarios is {count}')
-    with open('test_config.json', 'w') as file:
+    with open('simulator/config/test_config.json', 'w') as file:
         json.dump(all_scenarios, file)
 
 
@@ -62,7 +62,7 @@ def prep_user_scenarios():
     timed_events = dict()
 
     if os.path.isfile('scenario_combos'):
-        with open('scenario_combos', 'rb') as file:
+        with open('simulator/config/scenario_combos', 'rb') as file:
             try:
                 timed_events = pickle.load(file)
             except Exception:
@@ -82,7 +82,7 @@ def prep_user_scenarios():
                         print(subset)
                         print('Feasible')
 
-        with open('scenario_combos', 'wb') as file:
+        with open('simulator/config/scenario_combos', 'wb') as file:
             pickle.dump(timed_events, file)
 
     return timed_events

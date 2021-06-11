@@ -8,7 +8,7 @@ results = dict()
 
 
 def main():
-    with open('test_config_2.json', 'rb') as file:
+    with open('simulator/config/test_config.json', 'rb') as file:
         data = file.read()
         scenarios = json.loads(data)
 
@@ -22,7 +22,7 @@ def main():
         scenario_reader(key, scenario)
         count += 1
 
-    with open('test_results.json', 'w') as file:
+    with open('simulator/config/test_results.json', 'w') as file:
         json.dump(results, file)
 
 
