@@ -14,24 +14,23 @@ def main():
 
 
 def prot_liveness():
-    with open('simulator/config/test_avail_config_new_working.json', 'rb') as file:
+    with open('simulator/config/test_avail_config.json', 'rb') as file:
         data = file.read()
         scenarios = json.loads(data)
 
-    print(len(scenarios.keys()))
-    # with open('simulator/config/test_avail_results.json', 'w') as file:
-    #     for key in scenarios:
-    #         print('\n------------------------------------------------------------------')
-    #         print(f'Scenario name {key}')
-    #         liveness_scenario_reader(key, scenarios[key])
-    #     json.dump(results, file)
+    with open('simulator/config/test_avail_results.json', 'w') as file:
+        for key in scenarios:
+            print('\n------------------------------------------------------------------')
+            print(f'Scenario name {key}')
+            liveness_scenario_reader(key, scenarios[key])
+        json.dump(results, file)
+
+    #### Uncomment and edit for testing a single scenario
 
     # single_scenario = "ID_VERIFIED.1.3-register-310"
     # liveness_scenario_reader(single_scenario,
     #                          scenarios[single_scenario])
 
-
-# Scenario name ID_VERIFIED.1.3-register-310
 
 def liveness_scenario_reader(key, scenario, trial_count=0):
     global results

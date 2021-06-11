@@ -135,3 +135,19 @@ scenario_combos
 main.py
 
 config.json
+
+protocol.pdf
+
+scenario_combos_05062021
+
+simulator/config/avail_scenario_combos
+
+simulator/config/test_avail_config_working.json
+
+simulator/config/test_avail_results_new_working.json
+
+simulator/config/test_avail_results_working.json
+
+simulator/config/test_config.json
+
+zip.zip
