@@ -53,12 +53,10 @@ class Node:
             return (self.pubkey, self.privkey)
 
     def pass_message(self, message, next_hop):
-        # print(f'Message header is {message.header}')
         next_hop_found = False
         print(f'Node {self.id} passing message with header {message.header}')
         if self.message_on_hold:
             print(f'Self message on hold with header {message.header}')
-            # self.network.increment_tick()
         else:
             for key in copy.deepcopy(list(self.address_book.keys())):
                 if next_hop in key:
@@ -188,10 +186,9 @@ class User(Node):
 
         if self.network.pudding_type == PuddingType.ID_VERIFIED:
             result = self._register_id_verified(flag)
-            # return result
         elif self.network.pudding_type == PuddingType.INCOGNITO:
             result = self._register_incognito(flag)
-            # return result
+
 
     def discover_user(self, user_id):
         print('\n---------------------------------------------')
@@ -327,8 +324,6 @@ class User(Node):
                 message = self.prepare_message(
                     discovery_node, payload, flag, anonymous=True)
                 self.message_buffer.append(message)
-                # if len(message.header) != 0:
-                #    result = self.pass_message(message, message.header.pop())
             self.network.increment_tick()
 
     def _register_incognito(self, flag):
@@ -389,8 +384,6 @@ class User(Node):
             message = self.prepare_message(
                 discovery_node, payload, flag, anonymous=True, handle=self_address)
             self.message_buffer.append(message)
-            # if len(message.header) != 0:
-            #    result = self.pass_message(message, message.header.pop())
 
         # Make yourself known to relay nodes
         for relay_node in self.network.relay_nodes:
@@ -463,8 +456,6 @@ class User(Node):
         if new_user:
             print(f'{self.id} pinging {searchee_id}')
 
-            # self.ping_user(searchee_id)
-
 
 class DiscoveryNode(Node):
 
@@ -496,7 +487,6 @@ class DiscoveryNode(Node):
                 self._process_discovery_request(message)
             elif message.detect_type() == 'UPDATE':
                 self._update_user_data(message)
-            # self.network.increment_tick()
         else:
             print(
                 f'Discovery node {self.id} is unavailable. Network status {self.network.action_success_failure}')
@@ -505,7 +495,6 @@ class DiscoveryNode(Node):
             elif not self.message_on_hold:
                 print('Putting message on hold')
                 self.message_on_hold = message
-                #self.pass_message(message, '--DUMMY--')
 
     def _register_user(self, message):
         decrypted_payload, session_key = crypto.decrypt(
@@ -515,8 +504,6 @@ class DiscoveryNode(Node):
         user_registry_key, secret_piece, svk = [x.strip()
                                                 for x in decrypted_payload.split('--SEP--')]
 
-        # print(
-        #    f'Discovery node {self.id} registering user with ID / handles {user_registry_key} with secret piece {secret_piece}\n')
         print(
             f'Discovery node {self.id} registering user with handle {user_registry_key}\n')
         user_entry = RegistrationData(secret_piece, svk)

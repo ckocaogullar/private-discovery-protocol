@@ -1,16 +1,14 @@
 # Inter-project modules
-from src import THRESHOLD, N, FINISH_TIME, PuddingType
+from src import THRESHOLD, N, FINISH_TIME
 
 # Python modules
-import json
 import itertools
-import pickle
-import os
-import string
+import json
+
 
 # Limits
-k_values = [i for i in range(1, 5)]
-n_values = [i for i in range(1, 5)]
+k_values = [i for i in range(1, THRESHOLD)]
+n_values = [i for i in range(1, N)]
 time_instances = [i for i in range(0, FINISH_TIME)]
 users = ['Alice', 'Bob']
 
@@ -32,17 +30,14 @@ def main():
     # prep_availability_scenarios()
     all_scenarios = dict()
 
-    # This is wrong. Must be k <= n at all times
     all_network_scenarios = list(
         itertools.product(pudding_types, k_values, n_values))
 
     network_scenarios = list()
-    # print(network_scenarios)
+
     for scenario in all_network_scenarios:
         if scenario[1] <= scenario[2]:
             network_scenarios.append(scenario)
-
-    # print(network_scenarios)
 
     count = 0
     for network_scenario in network_scenarios:
@@ -66,10 +61,10 @@ def main():
                 all_scenarios[scenario_key] = scenario_dict
                 count += 1
                 print(count)
-    print(f'Total scenario number: {len(all_scenarios)}')
-    print(f'Total scenario number: {count}')
-    # with open('simulator/config/test_avail_config.json', 'w') as file:
-    #     json.dump(all_scenarios, file)
+
+    print(f'\nTotal scenario number: {count}')
+    with open('simulator/config/test_avail_config.json', 'w') as file:
+        json.dump(all_scenarios, file)
 
 
 def prep_availability_scenarios(k, n):
@@ -78,9 +73,6 @@ def prep_availability_scenarios(k, n):
 
     for action in time_events.keys():
         total_time = calculate_max_time(action, n, k)
-        # print(f'action {action}')
-        # print(f'total time {total_time}')
-        # print(f'n {n}')
 
         node_probs = list(itertools.product(itertools.product(
             [True, False], repeat=n), repeat=total_time))
@@ -89,12 +81,10 @@ def prep_availability_scenarios(k, n):
 
         for i in range(len(node_probs)):
             nod = node_probs[i]
-            #print(f'nod before modification {nod}')
             if action == 'update':
                 nod = tuple(registration_time + list(nod))
             elif action == 'discover':
                 nod = tuple(2 * registration_time + list(nod))
-            #print(f'nod after modification {nod}')
             node_probs[i] = nod
 
         time_probs = dict()
@@ -105,7 +95,6 @@ def prep_availability_scenarios(k, n):
             time_probs[i] = scenario
 
         timed_scenarios[action] = time_probs
-        # print(timed_scenarios)
 
     return timed_scenarios
 
@@ -124,9 +113,6 @@ def is_feasible_time(action, event, k, n):
     for i in range(n):
         node_available_at_all = False
         for j in range(calculate_max_time(action, n, k)):
-            # print(f'event[{key}] {event[key]}')
-            # node_available_at_all = node_available_at_all or event[key][i]
-            #print(f'event[{len(event)-j-1}] {event[len(event)-j-1]}')
             node_available_at_all = node_available_at_all or event[len(
                 event)-j-1][i]
         if not node_available_at_all:
