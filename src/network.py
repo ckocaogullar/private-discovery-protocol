@@ -41,7 +41,7 @@ class Network:
 
         saved_keys_flag = False
         if os.path.isfile('network_data'):
-            with open('network_data', 'rb') as file:
+            with open('simulator/config/network_data', 'rb') as file:
                 try:
                     key_pairs = pickle.load(file)
                     temp_key_pairs = key_pairs.copy()
@@ -87,7 +87,7 @@ class Network:
 
         # Return some spare key pairs for the controller to use if it needs to create users
 
-        with open('network_data', 'wb') as file:
+        with open('simulator/config/network_data', 'wb') as file:
             pickle.dump(key_pairs, file)
 
         print('\n---------------------------------------------')
